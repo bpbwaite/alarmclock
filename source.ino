@@ -1,131 +1,115 @@
 /*
-    Bradyn Braithwaite, 2020
+    by Bradyn Braithwaite, 2020
 */
+
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
 #include <TM1637Display.h>
 #include <pins_arduino.h>
 
-#define pinD2asClock         2
-#define pinD3asDataInOut     3
-#define button_A_setter      8
-#define button_B_hour        4  // hour, inverted, pullup.
-#define button_C_minute      5  // minute, inverted, pullup.
-#define militaryEnabler      6  // no longer in use
-#define buzzerPin            9  // pin with PWM
-#define photodiodePullPin    A0 // A0 = 18, analog input. defineception
-#define daHumidTempSensorPin 7
+// GLOBAL VARIABLES AND OBJECTS
+static const unsigned short displayClockPin       = 2;
+static const unsigned short displayDataIOPin      = 3;
+static const unsigned short button_A_setter       = 8;
+static const unsigned short button_B_hour         = 4;  // hour, pullup
+static const unsigned short button_C_minute       = 5;  // minute, pullup
+static const unsigned short militaryPin           = 6;  // for debugging
+static const unsigned short buzzerPin             = 9;  // any pin with PWM
+static const unsigned short lightSensorAnalogPin  = 18; // analog input A0
+static const unsigned short humidAndTempSensorPin = 7;
 class timeUnit {
 public:
     int hour;
     int minute;
 };
-
-TM1637Display myAlarmclock(pinD2asClock, pinD3asDataInOut);
-DHT dht11Sensor(daHumidTempSensorPin, 11);
-timeUnit Offset;
-timeUnit targetWake;
+TM1637Display myAlarmclock(displayClockPin, displayDataIOPin);
+DHT dht11Sensor(humidAndTempSensorPin, 11); // set to mode 11
+timeUnit Offset;                            // as described by button presses
+timeUnit targetWake;                        // as described by setting the alarm
 byte ColonController;
-int ttbshown;
-short brightnessValue                = 2; // default
-bool militarized                     = false;
-bool alarmIsSet                      = false;
-unsigned long miliWhenlastButtonPush = 0;
+unsigned int timeReadyToShow;
+unsigned short brightnessValue           = 2;
+bool militaryTimeMode                    = false;
+bool alarmIsSet                          = false;
+unsigned long millisWhenButtonLastPushed = 0;
 
-int outTimeAsInteger(timeUnit t_offset)
-{
-    const int time_scale = 1;
-    static unsigned int h, m, m_true;
+// FUNCTIONS
+int outputTimeAsNumber(timeUnit t_offset) {
+    const double time_scale = 1.0;
+    static unsigned int hourComponent, minuteComponent, minute_true;
     unsigned long sec = time_scale * millis() / 1000;
-    m                 = (sec / 60 + Offset.minute) % 60;
-    m_true            = (sec / 60 + Offset.minute);
-    h                 = (m_true / 60 + Offset.hour) % 24;
-    return 100 * h + m;
+    minute_true       = (sec / 60 + Offset.minute);
+    minuteComponent   = minute_true % 60;
+    hourComponent     = (minute_true / 60 + Offset.hour) % 24;
+    return 100 * hourComponent + minuteComponent;
 }
-int qTime() // refactored
-{
-    return outTimeAsInteger(Offset);
+
+int qTime() {
+    return outputTimeAsNumber(Offset);
 }
-bool noButtonsAreBeingPushed()
-{
-    return !(!digitalRead(button_B_hour) || !digitalRead(button_C_minute) ||
-             !digitalRead(button_A_setter));
-    // yes i know demorgans theorem but this makes WAY more sense
+
+bool noButtonsAreBeingPushed() {
+    return !(!digitalRead(button_B_hour) || !digitalRead(button_C_minute) || !digitalRead(button_A_setter));
+    // DeMorgan would be disappointed in me
 }
-unsigned long timeSincelastButtonPush()
-{
-    return millis() - miliWhenlastButtonPush;
+
+unsigned long timeSincelastButtonPush() {
+    return millis() - millisWhenButtonLastPushed;
 }
-void alarmingFunction()
-{
-    static bool markedToRun = true;
-    static bool sounding    = false;
-    if (sounding ||
-        (alarmIsSet && (qTime() == 100 * targetWake.hour + targetWake.minute) &&
-         markedToRun)) {
+
+void alarmingFunction() {
+    static const float loudnessScale = 0.85;
+    static bool markedToRun          = true;
+    static bool sounding             = false;
+    if (sounding || (alarmIsSet && (qTime() == 100 * targetWake.hour + targetWake.minute) && markedToRun)) {
         sounding = true;
         while (noButtonsAreBeingPushed()) {
             if (millis() % 400 > 200) {
-                // analogWrite(buzzerPin, 0xFF * 0.80); // how much volt to try give
                 digitalWrite(buzzerPin, HIGH);
+                // analogWrite(buzzerPin, 0xFF * loudnessScale); // optional
             }
             else {
-                // analogWrite(buzzerPin, 0);
                 digitalWrite(buzzerPin, LOW);
             }
         }
-        while (!noButtonsAreBeingPushed()) { // meaning, some are being pooshed
+        while (!noButtonsAreBeingPushed()) { // means a button is being pushed
             sounding    = false;
             markedToRun = false;
-            digitalWrite(buzzerPin, LOW); // gotta stop yer beeper
-            delay(560);                   // debounce as to not change the time by accident
+            digitalWrite(buzzerPin, LOW); // halt buzzer
+            delay(560);                   // not change anything by accident
         }
     }
-    else if (!markedToRun &&
-             qTime() != (100 * targetWake.hour + targetWake.minute)) {
+    else if (!markedToRun && qTime() != (100 * targetWake.hour + targetWake.minute)) {
         markedToRun = true;
     }
 }
 
-void temperatureFunction()
-{
-    const int intervalOfService = 5; // minutes
-    static bool markedToRun     = true;
+void temperatureFunction() {
+    static const unsigned int intervalOfService = 5; // minutes between showing the temperature
+    static bool markedToRun                     = true;
+    static const unsigned int requiredDelay     = 10000;
     static float temperature_F;
     static float temperature_C;
-    bool Celsius = militarized;
-    if (timeSincelastButtonPush() > 10000 && qTime() != 1200 &&
-        qTime() % intervalOfService == 0 && markedToRun &&
-        digitalRead(
-            button_C_minute)) { // button_C_minute prevents showing temp while
-                                // passing the increment during set time
+    bool Celsius = militaryTimeMode;                                                                                                                       // deprecated
+    if (timeSincelastButtonPush() > requiredDelay && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // note: button_C_minute: prevents showing temp while passing the trigger when setting time
         myAlarmclock.clear();
-        // take reading:
+        // Take reading:
         if (Celsius) {
-            temperature_C = dht11Sensor.readTemperature(false); // false==celsius
-            if (temperature_F < 100) {
+            temperature_C = dht11Sensor.readTemperature(false); // false means celsius
+            if (temperature_C < 100) {
                 myAlarmclock.showNumberDec(temperature_C, false, 2, 1);
-                myAlarmclock.showNumberHexEx(0xC, 0, false, 1, 3);
-            }
-            else {
-                myAlarmclock.showNumberDec(temperature_C, false, 3, 0);
                 myAlarmclock.showNumberHexEx(0xC, 0, false, 1, 3);
             }
         }
         else {
-            temperature_F = dht11Sensor.readTemperature(true); // true==fahrenheit
+            temperature_F = dht11Sensor.readTemperature(true); // true means fahrenheit
             if (temperature_F < 100) {
                 myAlarmclock.showNumberDec(temperature_F, false, 2, 1);
                 myAlarmclock.showNumberHexEx(0xF, 0, false, 1, 3);
             }
-            else {
-                myAlarmclock.showNumberDec(temperature_F, false, 3, 0);
-                myAlarmclock.showNumberHexEx(0xF, 0, false, 1, 3);
-            }
         }
-
-        delay(5000); // kinda blocking. cant change modes while showing temperature.
+        delay(5000); // TODO: fix blocking
         markedToRun = false;
     }
     else if (qTime() % intervalOfService != 0) {
@@ -133,41 +117,36 @@ void temperatureFunction()
     }
 }
 
-void timingFunction()
-{
-    ttbshown = qTime();
-    if (!militarized) {
+void timingFunction() {
+    timeReadyToShow = qTime();
+    if (!militaryTimeMode) {
         int augmentHour = qTime() / 100;
         if (augmentHour == 0) {
-            ttbshown += 1200;
+            timeReadyToShow += 1200;
         }
         else if (augmentHour > 12) {
-            ttbshown -= 1200;
+            timeReadyToShow -= 1200;
         }
     }
-    if (millis() % 2000 > 1000 && !militarized) {
-        ColonController |= 255; // mask all bits, because cheap
+    if (millis() % 2000 > 1000 && !militaryTimeMode) {
+        ColonController |= 255; // mask all bits to show a colon. Some chips require mask = 64
     }
     else {
         ColonController = 0;
     }
-
-    myAlarmclock.showNumberDecEx(ttbshown, ColonController,
-                                 (ttbshown < 99) || militarized, 4, 0);
+    myAlarmclock.showNumberDecEx(timeReadyToShow, ColonController, (timeReadyToShow < 99) || militaryTimeMode, 4, 0);
 }
-void lightSensorandBrightnessHandler()
-{
-    static bool markedToRun = true;
-    static bool dynamicLighting =
-        false; // must be true in order to change on the fly
-    static bool immediateChange = false;
-    const short thresholds[4]   = {140, 250, 400, 750}; // temporary values.
-    int lightLevels =
-        analogRead(photodiodePullPin); // make sure pull is correct direction
+
+void lightSensorandBrightnessHandler() {
+    static bool markedToRun    = true;
+    const bool dynamicLighting = false;                            // a future chassis designed may allow for dynamic brightness adjustments
+    const bool immediateChange = false;                            // the change is usually spread over a couple of minutes
+    const short thresholds[4]  = {140, 250, 400, 750};             // temporary uncalibrated values
+    unsigned int lightLevels   = analogRead(lightSensorAnalogPin); // put +5V; ensure correct pull orientation
     if (dynamicLighting && !immediateChange) {
         if ((qTime() % 2 == 1) && markedToRun) {
             markedToRun = false;
-            // proceed, limited to one change per minute.
+            // proceed
             if (lightLevels < thresholds[0]) {
                 brightnessValue = 1;
             }
@@ -190,59 +169,48 @@ void lightSensorandBrightnessHandler()
         }
     }
     else if (dynamicLighting && immediateChange) {
-        short temp = floor(0.0065525317 * lightLevels + 0.23986);
-        myAlarmclock.setBrightness(temp < 8 && temp >= 0 ? temp : 4);
+        short linBrite = floor(0.0065525317 * lightLevels + 0.23986);
+        myAlarmclock.setBrightness(linBrite < 8 && linBrite >= 0 ? linBrite : 4);
+        // values computed by linear regression with fallback
     }
 }
 
-void inFieldSetupandButtonFeeler() // refactored for expandability
+void buttonInputHandler() // TODO: planned expansions
 {
     if (!digitalRead(button_B_hour) && !digitalRead(button_A_setter)) {
         Offset.hour++;
-        miliWhenlastButtonPush = millis();
-        delay(100);
+        millisWhenButtonLastPushed = millis();
+        delay(120);
     }
     if (!digitalRead(button_C_minute) && !digitalRead(button_A_setter)) {
         Offset.minute++;
-        miliWhenlastButtonPush = millis();
-        delay(100);
+        millisWhenButtonLastPushed = millis();
+        delay(120);
     }
-    // if (!digitalRead(militaryEnabler)) {
-    //    militarized = !militarized;
-    //    while (!digitalRead(militaryEnabler)) {
-    //        delay(100);
-    //    }
-    //}
 }
-void photo15kCalibrationSequence()
-{
-    myAlarmclock.showNumberDec(analogRead(photodiodePullPin));
-    delay(500);
-}
-void setup()
-{
+
+void setup() {
+    myAlarmclock.clear();
     dht11Sensor.begin();
     myAlarmclock.setBrightness(brightnessValue);
-    myAlarmclock.clear();
     pinMode(button_A_setter, INPUT_PULLUP);
     pinMode(button_B_hour, INPUT_PULLUP);
     pinMode(button_C_minute, INPUT_PULLUP);
-    pinMode(militaryEnabler, INPUT_PULLUP);
+    pinMode(militaryPin, INPUT_PULLUP);
     pinMode(buzzerPin, OUTPUT);
     digitalWrite(buzzerPin, LOW);
-    // display, analogOut, & sensor pinmode is auto set by a superclass.
-    Offset.hour       = 12;
-    Offset.minute     = 0; // start up at noon
+    // all other required pins set by object constructors
+    Offset.hour       = 12; // start up at noon
+    Offset.minute     = 0;
     alarmIsSet        = true;
-    targetWake.hour   = 10;
-    targetWake.minute = 0; // 10:00 am
+    targetWake.hour   = 10; // enter time here (24 hr). 10:00 AM is set.
+    targetWake.minute = 0;
 }
 
-void loop()
-{
+void loop() {
     lightSensorandBrightnessHandler();
     timingFunction();
     alarmingFunction();
-    inFieldSetupandButtonFeeler();
+    buttonInputHandler();
     temperatureFunction();
 }
