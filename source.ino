@@ -1,7 +1,5 @@
 /*
-    The 'Bluino'
-    Bradyn Braithwaite
-    June 2020
+    Bradyn Braithwaite, 2020
 */
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
@@ -51,7 +49,8 @@ int qTime() // refactored
 }
 bool noButtonsAreBeingPushed()
 {
-    return !(!digitalRead(button_B_hour) || !digitalRead(button_C_minute) || !digitalRead(button_A_setter));
+    return !(!digitalRead(button_B_hour) || !digitalRead(button_C_minute) ||
+             !digitalRead(button_A_setter));
     // yes i know demorgans theorem but this makes WAY more sense
 }
 unsigned long timeSincelastButtonPush()
@@ -62,15 +61,17 @@ void alarmingFunction()
 {
     static bool markedToRun = true;
     static bool sounding    = false;
-    if (sounding || (alarmIsSet && (qTime() == 100 * targetWake.hour + targetWake.minute) && markedToRun)) {
+    if (sounding ||
+        (alarmIsSet && (qTime() == 100 * targetWake.hour + targetWake.minute) &&
+         markedToRun)) {
         sounding = true;
         while (noButtonsAreBeingPushed()) {
             if (millis() % 400 > 200) {
-                //analogWrite(buzzerPin, 0xFF * 0.80); // how much volt to try give
+                // analogWrite(buzzerPin, 0xFF * 0.80); // how much volt to try give
                 digitalWrite(buzzerPin, HIGH);
             }
             else {
-                //analogWrite(buzzerPin, 0);
+                // analogWrite(buzzerPin, 0);
                 digitalWrite(buzzerPin, LOW);
             }
         }
@@ -81,7 +82,8 @@ void alarmingFunction()
             delay(560);                   // debounce as to not change the time by accident
         }
     }
-    else if (!markedToRun && qTime() != (100 * targetWake.hour + targetWake.minute)) {
+    else if (!markedToRun &&
+             qTime() != (100 * targetWake.hour + targetWake.minute)) {
         markedToRun = true;
     }
 }
@@ -93,7 +95,11 @@ void temperatureFunction()
     static float temperature_F;
     static float temperature_C;
     bool Celsius = militarized;
-    if (timeSincelastButtonPush() > 10000 && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // button_C_minute prevents showing temp while passing the increment during set time
+    if (timeSincelastButtonPush() > 10000 && qTime() != 1200 &&
+        qTime() % intervalOfService == 0 && markedToRun &&
+        digitalRead(
+            button_C_minute)) { // button_C_minute prevents showing temp while
+                                // passing the increment during set time
         myAlarmclock.clear();
         // take reading:
         if (Celsius) {
@@ -146,15 +152,18 @@ void timingFunction()
         ColonController = 0;
     }
 
-    myAlarmclock.showNumberDecEx(ttbshown, ColonController, (ttbshown < 99) || militarized, 4, 0);
+    myAlarmclock.showNumberDecEx(ttbshown, ColonController,
+                                 (ttbshown < 99) || militarized, 4, 0);
 }
 void lightSensorandBrightnessHandler()
 {
-    static bool markedToRun     = true;
-    static bool dynamicLighting = false; // must be true in order to change on the fly
+    static bool markedToRun = true;
+    static bool dynamicLighting =
+        false; // must be true in order to change on the fly
     static bool immediateChange = false;
-    const short thresholds[4]   = {140, 250, 400, 750};          // temporary values.
-    int lightLevels             = analogRead(photodiodePullPin); // make sure pull is correct direction
+    const short thresholds[4]   = {140, 250, 400, 750}; // temporary values.
+    int lightLevels =
+        analogRead(photodiodePullPin); // make sure pull is correct direction
     if (dynamicLighting && !immediateChange) {
         if ((qTime() % 2 == 1) && markedToRun) {
             markedToRun = false;
@@ -198,7 +207,7 @@ void inFieldSetupandButtonFeeler() // refactored for expandability
         miliWhenlastButtonPush = millis();
         delay(100);
     }
-    //if (!digitalRead(militaryEnabler)) {
+    // if (!digitalRead(militaryEnabler)) {
     //    militarized = !militarized;
     //    while (!digitalRead(militaryEnabler)) {
     //        delay(100);
