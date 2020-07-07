@@ -1,2 +1,2 @@
-# alarmClock
-personal alarm clock - code fo rarduino
+# Alarm Clock
+## My personal alarm clock, built from and coded for Arduino.
