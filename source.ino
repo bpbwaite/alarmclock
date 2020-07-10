@@ -1,9 +1,6 @@
 #include "alcObjects.h"
-
 alck myAlClock;
-
 void setup() {
-
     myAlClock.alarmIsSet              = false;
     myAlClock.wakeTargetOffset.hour   = 10; // enter time here (24 hr)
     myAlClock.wakeTargetOffset.minute = 0;
@@ -11,7 +8,6 @@ void setup() {
     myAlClock.darkHoursEnd            = 7;
     myAlClock.obeyDimTime             = true;
 }
-
 void loop() {
-    myAlClock.runNow(); // loopy loop
+    myAlClock.runNow(); // it loops anyways
 }
