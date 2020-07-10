@@ -165,7 +165,7 @@ void alck::lightSensorandBrightnessHandler() {
     static bool markedToRun            = true;
     const unsigned short thresholds[4] = {140, 250, 400, 750};             // temporary uncalibrated values
     unsigned int lightLevels           = analogRead(lightSensorAnalogPin); // use +5v and 15kOhm. ensure correct pull orientation
-    if (obeyDimTime && (((qTime() % 100) >= darkHoursStart) || (qTime() % 100 <= darkHoursEnd))) {
+    if (obeyDimTime && ((qTime() / 100.0 >= darkHoursStart) || (qTime() / 100.0 <= darkHoursEnd))) {
         thisClock->setBrightness(0);
     }
     else {
@@ -198,7 +198,7 @@ void alck::lightSensorandBrightnessHandler() {
             thisClock->setBrightness(linBrite < 8 && linBrite >= 0 ? linBrite : 4);
         }
         else {
-            thisClock->setBrightness(brightnessValue);
+            thisClock->setBrightness(defaultBrightness);
         }
     }
 }
