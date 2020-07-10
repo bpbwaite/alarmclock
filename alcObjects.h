@@ -10,41 +10,42 @@
 #include <pins_arduino.h>
 class timeUnit {
 public:
-    int hour;
-    int minute;
+    unsigned int hour;
+    unsigned int minute;
 };
 class alck {
 public:
     alck();
+    alck(unsigned short alckMappings[9], timeUnit time_in, timeUnit alarm_in, bool alarmIsSet, bool obeyDimTime, bool dynamicLighting, bool immediateChange);
     ~alck();
     bool alarmIsSet;
     bool obeyDimTime;
-    timeUnit wakeTargetOffset;
     unsigned short darkHoursStart;
     unsigned short darkHoursEnd;
+    timeUnit wakeTargetOffset;
     void runNow();
 
 private:
     const unsigned short displayClockPin       = 2;
     const unsigned short displayDataIOPin      = 3;
     const unsigned short button_A_setter       = 8;
-    const unsigned short button_B_hour         = 4;  // hour, pullup
-    const unsigned short button_C_minute       = 5;  // minute, pullup
-    const unsigned short militaryPin           = 6;  // for debugging
-    const unsigned short buzzerPin             = 9;  // any pin with PWM
-    const unsigned short lightSensorAnalogPin  = 18; // analog input A0
+    const unsigned short button_B_hour         = 4;
+    const unsigned short button_C_minute       = 5;
+    const unsigned short militaryPin           = 6;
+    const unsigned short buzzerPin             = 9;
+    const unsigned short lightSensorAnalogPin  = 18;
     const unsigned short humidAndTempSensorPin = 7;
-
-    unsigned int timeReadyToShow             = 0;
-    unsigned short brightnessValue           = 2;
-    bool militaryTimeMode                    = false;
-    unsigned long millisWhenButtonLastPushed = 0;
+    bool dynamicLighting; // a future chassis design may allow for dynamic brightness adjustments
+    bool immediateChange; // the change is usually spread over a couple of minutes
+    unsigned short brightnessValue;
+    bool militaryTimeMode;
+    unsigned long millisWhenButtonLastPushed;
     TM1637Display *thisClock;
     DHT *temperatureSensor;
     timeUnit Offset;
-    byte ColonController;
     unsigned int outputTimeAsNumber(timeUnit t_offset);
     unsigned int qTime();
+    unsigned int timeReadyToShow;
     bool noButtonsAreBeingPushed();
     unsigned long timeSincelastButtonPush();
     void alarmingFunction();
