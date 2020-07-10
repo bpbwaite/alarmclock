@@ -9,7 +9,7 @@ alck::alck() {
     pinMode(militaryPin, INPUT_PULLUP);
     pinMode(buzzerPin, OUTPUT);
     digitalWrite(buzzerPin, LOW);
-    brightnessValue = 2;
+    brightnessValue = defaultBrightness;
     thisClock->setBrightness(brightnessValue);
     thisClock->clear();
     militaryTimeMode           = false;
@@ -25,7 +25,7 @@ alck::alck() {
     darkHoursEnd               = 0;
     millisWhenButtonLastPushed = 0;
 }
-alck::alck(unsigned short alckMappings[9], timeUnit time_in = {0, 0}, timeUnit alarm_in = {0, 0}, bool alarmIsSet = false, bool obeyDimTime = false, bool dynamicLighting = false, bool immediateChange = false) { // mappings portion of constructor is not yet implemented
+alck::alck(unsigned short alckMappings[9], timeUnit time_in = {0, 0}, timeUnit alarm_in = {0, 0}, bool alarmIsSet = false, bool obeyDimTime = false, bool dynamicLighting = false, bool immediateChange = false, unsigned short brightnessValue = defaultBrightness) { // mappings portion of constructor is not yet implemented
     thisClock         = new TM1637Display(displayClockPin, displayDataIOPin);
     temperatureSensor = new DHT(humidAndTempSensorPin, 11); // always set to mode 11
     temperatureSensor->begin();
@@ -35,7 +35,7 @@ alck::alck(unsigned short alckMappings[9], timeUnit time_in = {0, 0}, timeUnit a
     pinMode(militaryPin, INPUT_PULLUP);
     pinMode(buzzerPin, OUTPUT);
     digitalWrite(buzzerPin, LOW);
-    brightnessValue = 2;
+    this->brightnessValue = brightnessValue;
     thisClock->setBrightness(brightnessValue);
     thisClock->clear();
     militaryTimeMode           = false;
@@ -165,7 +165,7 @@ void alck::lightSensorandBrightnessHandler() {
     static bool markedToRun            = true;
     const unsigned short thresholds[4] = {140, 250, 400, 750};             // temporary uncalibrated values
     unsigned int lightLevels           = analogRead(lightSensorAnalogPin); // use +5v and 15kOhm. ensure correct pull orientation
-    if ((obeyDimTime && ((qTime() % 100) >= darkHoursStart)) || qTime() % 100 <= darkHoursEnd) {
+    if (obeyDimTime && (((qTime() % 100) >= darkHoursStart) || (qTime() % 100 <= darkHoursEnd))) {
         thisClock->setBrightness(0);
     }
     else {
