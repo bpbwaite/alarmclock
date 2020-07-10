@@ -16,7 +16,7 @@ public:
 class alck {
 public:
     alck();
-    alck(unsigned short alckMappings[9], timeUnit time_in, timeUnit alarm_in, bool alarmIsSet, bool obeyDimTime, bool dynamicLighting, bool immediateChange);
+    alck(unsigned short alckMappings[9], timeUnit time_in, timeUnit alarm_in, bool alarmIsSet, bool obeyDimTime, bool dynamicLighting, bool immediateChange, unsigned short brightnessValue);
     ~alck();
     bool alarmIsSet;
     bool obeyDimTime;
@@ -38,6 +38,7 @@ private:
     bool dynamicLighting; // a future chassis design may allow for dynamic brightness adjustments
     bool immediateChange; // the change is usually spread over a couple of minutes
     unsigned short brightnessValue;
+    static const unsigned short defaultBrightness = 5;
     bool militaryTimeMode;
     unsigned long millisWhenButtonLastPushed;
     TM1637Display *thisClock;
