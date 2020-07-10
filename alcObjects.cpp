@@ -1,6 +1,3 @@
-/*
-    by Bradyn Braithwaite, 2020
-*/
 #include "alcObjects.h"
 alck::alck() {
     thisClock         = new TM1637Display(displayClockPin, displayDataIOPin);
@@ -87,7 +84,7 @@ void alck::alarmingFunction() {
     const float loudnessScale = 0.95;
     static bool markedToRun   = true;
     static bool sounding      = false;
-    if ((timeSincelastButtonPush() > 5000) && sounding || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.hour % 24) + wakeTargetOffset.minute % 60) && markedToRun)) {
+    if (((timeSincelastButtonPush() > 5000) && sounding) || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.hour % 24) + wakeTargetOffset.minute % 60) && markedToRun)) {
         sounding = true;
         while (noButtonsAreBeingPushed()) {
             timingFunction(); // update time while beeping
