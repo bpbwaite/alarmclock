@@ -1,3 +1,6 @@
+/*
+    by Bradyn Braithwaite, 2020
+*/
 #include "alcObjects.h"
 alck myAlClock;
 void setup() {
