@@ -18,13 +18,15 @@ public:
     alck();
     alck(unsigned short alckMappings[9], timeUnit time_in, timeUnit alarm_in, bool alarmIsSet, bool obeyDimTime, bool dynamicLighting, bool immediateChange, unsigned short brightnessValue);
     ~alck();
+    bool debugMode = false;
     bool alarmIsSet;
     bool obeyDimTime;
-    unsigned short darkHoursStart;
+    bool time_btest = false;       // have these get set in constructor
+    float time_scale;              // eventually make settable
+    unsigned short darkHoursStart; // todo: make a setter for 0-23
     unsigned short darkHoursEnd;
     timeUnit wakeTargetOffset;
     void runNow();
-
 private:
     const unsigned short displayClockPin       = 2;
     const unsigned short displayDataIOPin      = 3;
@@ -35,15 +37,14 @@ private:
     const unsigned short buzzerPin             = 9;
     const unsigned short lightSensorAnalogPin  = 18;
     const unsigned short humidAndTempSensorPin = 7;
-    bool time_btest                            = true;
-    bool dynamicLighting; // a future chassis design may allow for dynamic brightness adjustments
+    bool dynamicLighting; // a future chassis design may allow for dynamic brightness using a sensor
     bool immediateChange; // the change is usually spread over a couple of minutes
     unsigned short brightnessValue;
     static const unsigned short defaultBrightness = 5;
-    float time_scale;
+    short bright_computed;
     bool militaryTimeMode;
     unsigned long millisWhenButtonLastPushed;
-    TM1637Display *thisClock;
+    TM1637Display *clockDisplay;
     DHT *temperatureSensor;
     timeUnit Offset;
     unsigned int outputTimeAsNumber(timeUnit t_offset);
