@@ -7,7 +7,6 @@
 #include <DHT.h>
 #include <DHT_U.h>
 #include <TM1637Display.h>
-#include <cmath>
 #include <pins_arduino.h>
 class timeUnit {
 public:
@@ -36,11 +35,12 @@ private:
     const unsigned short buzzerPin             = 9;
     const unsigned short lightSensorAnalogPin  = 18;
     const unsigned short humidAndTempSensorPin = 7;
-    bool time_base_test                        = true;
+    bool time_btest                            = true;
     bool dynamicLighting; // a future chassis design may allow for dynamic brightness adjustments
     bool immediateChange; // the change is usually spread over a couple of minutes
     unsigned short brightnessValue;
     static const unsigned short defaultBrightness = 5;
+    float time_scale;
     bool militaryTimeMode;
     unsigned long millisWhenButtonLastPushed;
     TM1637Display *thisClock;
