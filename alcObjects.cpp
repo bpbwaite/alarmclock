@@ -3,8 +3,8 @@
 */
 #include "alcObjects.h"
 alck::alck() {
-    time_scale        = 1.0;
-    thisClock         = new TM1637Display(displayClockPin, displayDataIOPin);
+    time_scale        = 1; // for speedy testing, set to 700
+    clockDisplay      = new TM1637Display(displayClockPin, displayDataIOPin);
     temperatureSensor = new DHT(humidAndTempSensorPin, 11); // always set to mode 11
     temperatureSensor->begin();
     pinMode(button_A_setter, INPUT_PULLUP);
@@ -14,8 +14,9 @@ alck::alck() {
     pinMode(buzzerPin, OUTPUT);
     digitalWrite(buzzerPin, LOW);
     brightnessValue = defaultBrightness;
-    thisClock->setBrightness(brightnessValue);
-    thisClock->clear();
+    bright_computed = defaultBrightness;
+    clockDisplay->setBrightness(brightnessValue);
+    clockDisplay->clear();
     militaryTimeMode           = false;
     alarmIsSet                 = false;
     obeyDimTime                = false;
@@ -31,7 +32,7 @@ alck::alck() {
 }
 alck::alck(unsigned short alckMappings[9], timeUnit time_in = {0, 0}, timeUnit alarm_in = {0, 0}, bool alarmIsSet = false, bool obeyDimTime = false, bool dynamicLighting = false, bool immediateChange = false, unsigned short brightnessValue = defaultBrightness) { // mappings portion of constructor is not yet implemented
     time_scale        = 1.0;
-    thisClock         = new TM1637Display(displayClockPin, displayDataIOPin);
+    clockDisplay      = new TM1637Display(displayClockPin, displayDataIOPin);
     temperatureSensor = new DHT(humidAndTempSensorPin, 11); // always set to mode 11
     temperatureSensor->begin();
     pinMode(button_A_setter, INPUT_PULLUP);
@@ -41,8 +42,9 @@ alck::alck(unsigned short alckMappings[9], timeUnit time_in = {0, 0}, timeUnit a
     pinMode(buzzerPin, OUTPUT);
     digitalWrite(buzzerPin, LOW);
     this->brightnessValue = brightnessValue;
-    thisClock->setBrightness(brightnessValue);
-    thisClock->clear();
+    bright_computed       = defaultBrightness;
+    clockDisplay->setBrightness(brightnessValue);
+    clockDisplay->clear();
     militaryTimeMode           = false;
     this->alarmIsSet           = alarmIsSet;
     this->obeyDimTime          = false;
@@ -64,6 +66,13 @@ void alck::runNow() {
         alarmingFunction();
         buttonInputHandler();
         temperatureFunction();
+        if (debugMode) {
+            // Serial.println("time (int):");
+            // Serial.println(qTime());
+            // Serial.println("brightness:");
+            // Serial.println(this->bright_computed);
+            // delay(100); // limit to 10 updates/sec max
+        }
         delay(2); // limit to 500 updates/sec max
     } while (true);
 }
@@ -91,12 +100,14 @@ void alck::alarmingFunction() {
     if (((timeSincelastButtonPush() > 5000) && sounding) || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.hour % 24) + wakeTargetOffset.minute % 60) && markedToRun)) {
         sounding = true;
         while (noButtonsAreBeingPushed()) {
-            timingFunction(); // update time while beeping
-            if ((int)floor(time_scale) * millis() % 400 > 200) {
+            timingFunction();           // update time while beeping
+            if (millis() % 400 > 200) { // dont incorporate timescale into this one
                 analogWrite(buzzerPin, 0xFF * loudnessScale);
+                delay(2);
             }
             else {
                 digitalWrite(buzzerPin, LOW);
+                delay(2);
             }
         }
         while (!noButtonsAreBeingPushed()) { // means a button is being pushed
@@ -111,30 +122,30 @@ void alck::alarmingFunction() {
     }
 }
 void alck::temperatureFunction() {
-    const unsigned int intervalOfService = 5; // minutes between showing the temperature
-    const unsigned int persistentDelay   = 5000;
-    static bool markedToRun              = true;
-    const unsigned int requiredDelay     = 24000;
+    const unsigned int intervalOfService    = 5 * time_scale; // minutes between showing the temperature, absolute
+    const unsigned int persistentDelayratio = 5000;           // gets divided by timescale
+    static bool markedToRun                 = true;
+    const unsigned int requiredDelay        = 24000;
     static float temperature_F;
     static float temperature_C;
     bool Celsius = militaryTimeMode;
     if (timeSincelastButtonPush() > requiredDelay && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // note: button_C_minute: prevents showing temp while passing the trigger when setting time
-        thisClock->clear();
+        clockDisplay->clear();
         if (Celsius) {                                                 // Take reading:
             temperature_C = temperatureSensor->readTemperature(false); // false means celsius
             if (temperature_C < 100) {
-                thisClock->showNumberDec(temperature_C, false, 2, 1);
-                thisClock->showNumberHexEx(0xC, 0, false, 1, 3);
+                clockDisplay->showNumberDec(temperature_C, false, 2, 1);
+                clockDisplay->showNumberHexEx(0xC, 0, false, 1, 3);
             }
         }
         else {
             temperature_F = temperatureSensor->readTemperature(true); // true means fahrenheit
             if (temperature_F < 100) {
-                thisClock->showNumberDec(temperature_F, false, 2, 1);
-                thisClock->showNumberHexEx(0xF, 0, false, 1, 3);
+                clockDisplay->showNumberDec(temperature_F, false, 2, 1);
+                clockDisplay->showNumberHexEx(0xF, 0, false, 1, 3);
             }
         }
-        delay(persistentDelay);
+        delay(persistentDelayratio / floor(time_scale));
         markedToRun = false;
     }
     else if (qTime() % intervalOfService != 0) {
@@ -163,20 +174,19 @@ void alck::timingFunction() {
     else {
         ColonController = 0;
     }
-    thisClock->showNumberDecEx(timeReadyToShow, ColonController, (timeReadyToShow < 99) || militaryTimeMode, 4, 0);
+    clockDisplay->showNumberDecEx(timeReadyToShow, ColonController, (timeReadyToShow < 99) || militaryTimeMode, 4, 0);
 }
 void alck::lightSensorandBrightnessHandler() {
     static bool markedToRun            = true;
     const unsigned short thresholds[4] = {140, 250, 400, 750}; // temporary, uncalibrated values
     static float t_dec                 = 0.0;
-    short bright_compute               = defaultBrightness;
     if (time_btest) {
-        t_dec          = (qTime() / 100.0);
-        bright_compute = floor(.000462 * pow(t_dec, 4) - 0.254 * pow(t_dec, 3) + 0.397 * pow(t_dec, 2) - 1.354 * t_dec + 0.654);
-        thisClock->setBrightness(bright_compute > 7 ? 7 : (bright_compute < 0 ? 0 : bright_compute));
+        t_dec           = (qTime() / 100.0);
+        bright_computed = floor(.000462 * pow(t_dec, 4) - 0.0254 * pow(t_dec, 3) + 0.397 * pow(t_dec, 2) - 1.354 * t_dec + 0.654);
+        clockDisplay->setBrightness(bright_computed > 7 ? 7 : (bright_computed < 0 ? 0 : bright_computed)); // fallback
     }
     else if (obeyDimTime && ((qTime() / 100.0 >= darkHoursStart) || (qTime() / 100.0 <= darkHoursEnd))) {
-        thisClock->setBrightness(0);
+        clockDisplay->setBrightness(0);
     }
     else if (dynamicLighting && !immediateChange) {
         unsigned int lightLevels = analogRead(lightSensorAnalogPin); // use +5v and 15k
@@ -197,26 +207,26 @@ void alck::lightSensorandBrightnessHandler() {
             else {
                 brightnessValue = defaultBrightness;
             }
-            thisClock->setBrightness(brightnessValue);
+            clockDisplay->setBrightness(brightnessValue);
         }
         else if (qTime() % 2 != 1) {
             markedToRun = true;
         }
         else if (dynamicLighting && immediateChange) {
             short linBrite = floor(0.00655 * lightLevels + 0.239); // lin reg with fallback
-            thisClock->setBrightness(linBrite <= 7 && linBrite >= 0 ? linBrite : defaultBrightness);
+            clockDisplay->setBrightness(linBrite <= 7 && linBrite >= 0 ? linBrite : defaultBrightness);
         }
         else {
-            thisClock->setBrightness(defaultBrightness);
+            clockDisplay->setBrightness(defaultBrightness);
         }
     }
 }
 void alck::flashRapidWhileSetup() {
     if ((int)floor(time_scale) * millis() % 1000 > 450) {
-        thisClock->setBrightness(2);
+        clockDisplay->setBrightness(2);
     }
     else {
-        thisClock->setBrightness(7);
+        clockDisplay->setBrightness(7);
     }
 }
 void alck::buttonInputHandler() {
@@ -233,7 +243,7 @@ void alck::buttonInputHandler() {
         while (!digitalRead(button_A_setter)) {
             flashRapidWhileSetup();
             militaryTimeMode = true;
-            thisClock->showNumberDecEx(100 * (wakeTargetOffset.hour % 24) + wakeTargetOffset.minute % 60, 64, true, 4, 0); // show the alarm clock setting
+            clockDisplay->showNumberDecEx(100 * (wakeTargetOffset.hour % 24) + wakeTargetOffset.minute % 60, 64, true, 4, 0); // show the alarm clock setting
             militaryTimeMode = false;
             if (!digitalRead(button_B_hour)) {
                 wakeTargetOffset.hour++;
@@ -247,7 +257,7 @@ void alck::buttonInputHandler() {
         while (digitalRead(button_A_setter)) { // for setting time
             flashRapidWhileSetup();
             militaryTimeMode = true;
-            thisClock->showNumberDecEx(qTime(), 64, true, 4, 0); // show the time setting
+            clockDisplay->showNumberDecEx(qTime(), 64, true, 4, 0); // show the time setting
             militaryTimeMode = false;
             if (!digitalRead(button_B_hour)) {
                 Offset.hour++;
