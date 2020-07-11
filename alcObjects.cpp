@@ -1,3 +1,6 @@
+/*
+    by Bradyn Braithwaite, 2020
+*/
 #include "alcObjects.h"
 alck::alck() {
     thisClock         = new TM1637Display(displayClockPin, displayDataIOPin);
@@ -163,39 +166,44 @@ void alck::timingFunction() {
 }
 void alck::lightSensorandBrightnessHandler() {
     static bool markedToRun            = true;
-    const unsigned short thresholds[4] = {140, 250, 400, 750};             // temporary uncalibrated values
-    unsigned int lightLevels           = analogRead(lightSensorAnalogPin); // use +5v and 15kOhm. ensure correct pull orientation
-    if (obeyDimTime && ((qTime() / 100.0 >= darkHoursStart) || (qTime() / 100.0 <= darkHoursEnd))) {
+    const unsigned short thresholds[4] = {140, 250, 400, 750}; // temporary, uncalibrated values
+    static float t_dec                 = 0.0;
+    short bright_compute               = defaultBrightness;
+    if (time_base_test) {
+        t_dec          = (qTime() / 100.0);
+        bright_compute = floor(.000462 * pow(t_dec, 4) - 0.254 * pow(t_dec, 3) + 0.397 * pow(t_dec, 2) - 1.354 * t_dec + 0.654);
+        thisClock->setBrightness(bright_compute > 7 ? 7 : (bright_compute < 0 ? 0 : bright_compute));
+    }
+    else if (obeyDimTime && ((qTime() / 100.0 >= darkHoursStart) || (qTime() / 100.0 <= darkHoursEnd))) {
         thisClock->setBrightness(0);
     }
-    else {
-        if (dynamicLighting && !immediateChange) {
-            if ((qTime() % 2 == 1) && markedToRun) {
-                markedToRun = false; // proceed
-                if (lightLevels < thresholds[0]) {
-                    brightnessValue = 1;
-                }
-                else if (lightLevels < thresholds[1]) {
-                    brightnessValue = 2;
-                }
-                else if (lightLevels < thresholds[2]) {
-                    brightnessValue = 3;
-                }
-                else if (lightLevels < thresholds[3]) {
-                    brightnessValue = 5;
-                }
-                else {
-                    brightnessValue = 7;
-                }
-                thisClock->setBrightness(brightnessValue);
+    else if (dynamicLighting && !immediateChange) {
+        unsigned int lightLevels = analogRead(lightSensorAnalogPin); // use +5v and 15k
+        if ((qTime() % 2 == 1) && markedToRun) {
+            markedToRun = false; // proceed
+            if (lightLevels < thresholds[0]) {
+                brightnessValue = 1;
             }
-            else if (qTime() % 2 != 1) {
-                markedToRun = true;
+            else if (lightLevels < thresholds[1]) {
+                brightnessValue = 2;
             }
+            else if (lightLevels < thresholds[2]) {
+                brightnessValue = 3;
+            }
+            else if (lightLevels < thresholds[3]) {
+                brightnessValue = 5;
+            }
+            else {
+                brightnessValue = defaultBrightness;
+            }
+            thisClock->setBrightness(brightnessValue);
+        }
+        else if (qTime() % 2 != 1) {
+            markedToRun = true;
         }
         else if (dynamicLighting && immediateChange) {
-            short linBrite = floor(0.0065525317 * lightLevels + 0.23986); // lin reg with fallback
-            thisClock->setBrightness(linBrite < 8 && linBrite >= 0 ? linBrite : 4);
+            short linBrite = floor(0.00655 * lightLevels + 0.239); // lin reg with fallback
+            thisClock->setBrightness(linBrite <= 7 && linBrite >= 0 ? linBrite : defaultBrightness);
         }
         else {
             thisClock->setBrightness(defaultBrightness);
