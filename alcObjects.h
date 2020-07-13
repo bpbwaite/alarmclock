@@ -13,50 +13,57 @@ public:
     unsigned int hour;
     unsigned int minute;
 };
-class alck {
+class alckBase {
 public:
-    alck();
-    alck(unsigned short alckMappings[9], timeUnit time_in, timeUnit alarm_in, bool alarmIsSet, bool obeyDimTime, bool dynamicLighting, bool immediateChange, unsigned short brightnessValue);
-    ~alck();
-    bool debugMode = false;
-    bool alarmIsSet;
-    bool obeyDimTime;
-    bool time_btest = false;       // have these get set in constructor
-    float time_scale;              // eventually make settable
-    unsigned short darkHoursStart; // todo: make a setter for 0-23
-    unsigned short darkHoursEnd;
-    timeUnit wakeTargetOffset;
-    void runNow();
-private:
-    const unsigned short displayClockPin       = 2;
-    const unsigned short displayDataIOPin      = 3;
-    const unsigned short button_A_setter       = 8;
-    const unsigned short button_B_hour         = 4;
-    const unsigned short button_C_minute       = 5;
-    const unsigned short militaryPin           = 6;
-    const unsigned short buzzerPin             = 9;
-    const unsigned short lightSensorAnalogPin  = 18;
-    const unsigned short humidAndTempSensorPin = 7;
-    bool dynamicLighting; // a future chassis design may allow for dynamic brightness using a sensor
-    bool immediateChange; // the change is usually spread over a couple of minutes
+    bool alarmIsSet;           // with no modifications, the device can have an alarm set to a time, and be ran from here
+    timeUnit wakeTargetOffset; // alarmIsSet is false, by the base constructor
+    virtual void runNow();     // the more advanced versions of the clock implement the method differently
+    alckBase();
+    ~alckBase();
+
+protected:                                      // nothing static; but it is assumed only one object is made
+    const unsigned short displayClockPin   = 2; // these pins will not be constant in the future
+    const unsigned short displayDataIOPin  = 3;
+    const unsigned short button_A_setter   = 8;
+    const unsigned short button_B_hour     = 4;
+    const unsigned short button_C_minute   = 5;
+    const unsigned short buzzerPin         = 9;
+    const unsigned short defaultBrightness = 5;
     unsigned short brightnessValue;
-    static const unsigned short defaultBrightness = 5;
-    short bright_computed;
     bool militaryTimeMode;
+    float time_scale; // make setter
     unsigned long millisWhenButtonLastPushed;
+    unsigned int timeReadyToShow;
     TM1637Display *clockDisplay;
-    DHT *temperatureSensor;
     timeUnit Offset;
     unsigned int outputTimeAsNumber(timeUnit t_offset);
     unsigned int qTime();
-    unsigned int timeReadyToShow;
-    bool noButtonsAreBeingPushed();
     unsigned long timeSincelastButtonPush();
+    bool noButtonsAreBeingPushed();
     void alarmingFunction();
-    void temperatureFunction();
     void timingFunction();
-    void lightSensorandBrightnessHandler();
     void flashRapidWhileSetup();
     void buttonInputHandler();
+};
+class alckAdvanced : public alckBase {
+public:
+    void runNow();
+    alckAdvanced();
+    ~alckAdvanced();
+
+protected:
+    const unsigned short lightSensorAnalogPin  = 18; // again, not constant in future
+    const unsigned short humidAndTempSensorPin = 7;
+    unsigned short darkHoursStart; // make a setter for 0-23
+    unsigned short darkHoursEnd;
+    short bright_computed;
+    bool obeyDimTime     = false; // old way of determining brightness
+    bool dynamicLighting = false; // a future chassis design may use a sensor
+    bool immediateChange = false; // the change is spread over a couple of minutes
+    bool debugMode       = false; // everything is set here so the constructors dont have to
+    bool time_btest      = false; // have these been set in other contexts?
+    DHT *temperatureSensor;
+    void temperatureFunction();
+    void lightSensorandBrightnessHandler();
 };
 #endif
