@@ -2,7 +2,6 @@
     by Bradyn Braithwaite, 2020
 */
 #include "alcObjects.h"
-
 alckBase::alckBase() { // reminder parent class constructor is called first
     time_scale   = 1.0;
     clockDisplay = new TM1637Display(displayClockPin, displayDataIOPin);
@@ -26,9 +25,8 @@ alckBase::~alckBase() {}
 alckAdvanced::alckAdvanced() {
     temperatureSensor = new DHT(humidAndTempSensorPin, 11); // always set to mode 11
     temperatureSensor->begin();
-    bright_computed = defaultBrightness;
-    darkHoursStart  = 0;
-    darkHoursEnd    = 0;
+    darkHoursStart = 0;
+    darkHoursEnd   = 0;
 }
 alckAdvanced::~alckAdvanced() {}
 void alckBase::runNow() {
@@ -38,6 +36,12 @@ void alckBase::runNow() {
         buttonInputHandler();
         delay(5); // limiter
     } while (true);
+}
+void alckAdvanced::t_btSetter(bool time_btest) {
+    this->time_btest = time_btest;
+}
+void alckAdvanced::t_tTempSetter(bool usingTemperature) {
+    this->usingTemperature = usingTemperature;
 }
 void alckAdvanced::runNow() {
     do {
@@ -97,9 +101,21 @@ void alckBase::timingFunction() {
     }
     clockDisplay->showNumberDecEx(timeReadyToShow, ColonController, (timeReadyToShow < 99) || militaryTimeMode, 4, 0);
 }
+unsigned short alckBase::ternaryBright(unsigned short input) { // many more places to use this method
+    return input < 0 ? 0 : (input > 7 ? 7 : (input));
+}
 void alckBase::flashRapidWhileSetup() {
     if ((int)floor(time_scale) * millis() % 1000 > 450) {
         clockDisplay->setBrightness(2);
+    }
+    else {
+        clockDisplay->setBrightness(7);
+    }
+}
+void alckAdvanced::flashRapidWhileSetup() {
+    if ((int)floor(time_scale) * millis() % 750 > 300) {
+        //clockDisplay->setBrightness(time_btest ? ternaryBright(bright_computer()) : 2);
+        clockDisplay->setBrightness(1);
     }
     else {
         clockDisplay->setBrightness(7);
@@ -175,46 +191,57 @@ void alckBase::alarmingFunction() {
         markedToRun = true;
     }
 }
-void alckAdvanced::temperatureFunction() {
+void alckAdvanced::temperatureFunction() {                    // want to make configurable
     const unsigned int intervalOfService    = 5 * time_scale; // minutes between showing the temperature, absolute
     const unsigned int persistentDelayratio = 5000;           // gets divided by timescale
     static bool markedToRun                 = true;
     const unsigned int requiredDelay        = 24000;
     static float temperature_F;
     static float temperature_C;
-    bool Celsius = militaryTimeMode;
-    if (timeSincelastButtonPush() > requiredDelay && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // note: button_C_minute: prevents showing temp while passing the trigger when setting time
-        clockDisplay->clear();
-        if (Celsius) {                                                 // Take reading:
-            temperature_C = temperatureSensor->readTemperature(false); // false means celsius
-            if (temperature_C < 100) {
-                clockDisplay->showNumberDec(temperature_C, false, 2, 1);
-                clockDisplay->showNumberHexEx(0xC, 0, false, 1, 3);
-            }
-        }
-        else {
-            temperature_F = temperatureSensor->readTemperature(true); // true means fahrenheit
-            if (temperature_F < 100) {
-                clockDisplay->showNumberDec(temperature_F, false, 2, 1);
-                clockDisplay->showNumberHexEx(0xF, 0, false, 1, 3);
-            }
-        }
-        delay(persistentDelayratio / floor(time_scale));
-        markedToRun = false;
+    if (!usingTemperature) {
+        // skip
     }
-    else if (qTime() % intervalOfService != 0) {
-        markedToRun = true;
+    else {
+        bool Celsius = militaryTimeMode;                                                                                                                       // deprecated
+        if (timeSincelastButtonPush() > requiredDelay && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // note: button_C_minute: prevents showing temp while passing the trigger when setting time
+            clockDisplay->clear();
+            if (Celsius) {                                                 // Take reading:
+                temperature_C = temperatureSensor->readTemperature(false); // false means celsius
+                if (temperature_C < 100) {
+                    clockDisplay->showNumberDec(temperature_C, false, 2, 1);
+                    clockDisplay->showNumberHexEx(0xC, 0, false, 1, 3);
+                }
+            }
+            else {
+                temperature_F = temperatureSensor->readTemperature(true); // true means fahrenheit
+                if (temperature_F < 100) {
+                    clockDisplay->showNumberDec(temperature_F, false, 2, 1);
+                    clockDisplay->showNumberHexEx(0xF, 0, false, 1, 3);
+                }
+            }
+            delay(persistentDelayratio / floor(time_scale));
+            markedToRun = false;
+        }
+        else if (qTime() % intervalOfService != 0) {
+            markedToRun = true;
+        }
     }
 }
-
+unsigned short alckAdvanced::bright_computer() {
+    static float t_dec = 0.0;
+    t_dec              = (qTime() / 100.0);
+    return ceil(.0003 * pow(t_dec, 4) - 0.0182 * pow(t_dec, 3) + 0.316 * pow(t_dec, 2) - 1.212 * t_dec + 0.972);
+}
 void alckAdvanced::lightSensorandBrightnessHandler() {
     static bool markedToRun            = true;
-    const unsigned short thresholds[4] = {140, 250, 400, 750}; // temporary, uncalibrated values
-    static float t_dec                 = 0.0;
-    if (time_btest) {
-        t_dec           = (qTime() / 100.0);
-        bright_computed = floor(.000462 * pow(t_dec, 4) - 0.0254 * pow(t_dec, 3) + 0.397 * pow(t_dec, 2) - 1.354 * t_dec + 0.654);
-        clockDisplay->setBrightness(bright_computed > 7 ? 7 : (bright_computed < 0 ? 0 : bright_computed)); // fallback
+    const unsigned short thresholds[4] = {140, 250, 400, 750}; // uncalibrated values
+    if (magicBright) {
+        // this option should take into account the current time as well as sensor data to control brightness
+        // obviously not yet implemented
+        // be sure to use the computer and ternary brightness
+    }
+    else if (time_btest) {
+        clockDisplay->setBrightness(ternaryBright(bright_computer())); // inline fallback
     }
     else if (obeyDimTime && ((qTime() / 100.0 >= darkHoursStart) || (qTime() / 100.0 <= darkHoursEnd))) {
         clockDisplay->setBrightness(0);
