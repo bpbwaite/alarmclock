@@ -20,7 +20,6 @@ public:
     virtual void runNow();     // the more advanced versions of the clock implement the method differently
     alckBase();
     ~alckBase();
-
 protected:                                      // nothing static; but it is assumed only one object is made
     const unsigned short displayClockPin   = 2; // these pins will not be constant in the future
     const unsigned short displayDataIOPin  = 3;
@@ -36,34 +35,39 @@ protected:                                      // nothing static; but it is ass
     unsigned int timeReadyToShow;
     TM1637Display *clockDisplay;
     timeUnit Offset;
-    unsigned int outputTimeAsNumber(timeUnit t_offset);
+    unsigned int outputTimeAsNumber(timeUnit);
     unsigned int qTime();
     unsigned long timeSincelastButtonPush();
+    unsigned short ternaryBright(unsigned short);
     bool noButtonsAreBeingPushed();
     void alarmingFunction();
     void timingFunction();
-    void flashRapidWhileSetup();
+    virtual void flashRapidWhileSetup();
     void buttonInputHandler();
 };
 class alckAdvanced : public alckBase {
 public:
-    void runNow();
+    void runNow(); // extends virtual
+    void t_btSetter(bool);
+    void t_tTempSetter(bool);
     alckAdvanced();
     ~alckAdvanced();
-
-protected:
+private:
     const unsigned short lightSensorAnalogPin  = 18; // again, not constant in future
     const unsigned short humidAndTempSensorPin = 7;
     unsigned short darkHoursStart; // make a setter for 0-23
     unsigned short darkHoursEnd;
-    short bright_computed;
-    bool obeyDimTime     = false; // old way of determining brightness
-    bool dynamicLighting = false; // a future chassis design may use a sensor
-    bool immediateChange = false; // the change is spread over a couple of minutes
-    bool debugMode       = false; // everything is set here so the constructors dont have to
-    bool time_btest      = false; // have these been set in other contexts?
+    bool usingTemperature = false;
+    bool obeyDimTime      = false; // old way of determining brightness
+    bool dynamicLighting  = false; // a future chassis design may use a sensor
+    bool immediateChange  = false; // the change is spread over a couple of minutes
+    bool debugMode        = false; // everything is set here so the constructors dont have to
+    bool time_btest       = false; // made a setter
+    bool magicBright      = false;
     DHT *temperatureSensor;
     void temperatureFunction();
+    void flashRapidWhileSetup(); // extends virtual
     void lightSensorandBrightnessHandler();
+    unsigned short bright_computer();
 };
 #endif
