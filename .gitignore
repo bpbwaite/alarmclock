@@ -1,7 +1,6 @@
 .clang-format
 avr-objdump.exe
 dump.bat
-.vscode/arduino.json
 .vscode/c_cpp_properties.json
 .vscode/tasks.json
 .vscode/settings.json
