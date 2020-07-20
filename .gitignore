@@ -144,3 +144,4 @@ build_out/sketch/alcObjects.cpp.cpp
 build_out/sketch/alcObjects.cpp.cpp.d
 build_out/sketch/alcObjects.cpp.cpp.o
 build_out/sketch/alcObjects.h
+.vscode/arduino.json
