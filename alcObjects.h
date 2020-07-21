@@ -17,7 +17,10 @@ public:
     void upHour();
     void downHour();
     void upMinute();
-    void downMinute(); // can refactor
+    void downMinute(); // can refactor these^
+    timeUnit();
+    timeUnit(unsigned, unsigned); // find places to overload?
+    ~timeUnit();
 
 protected:
     unsigned int hour;
@@ -25,34 +28,34 @@ protected:
 };
 class alckAbstract {
 public:
-    bool alarmIsSet;           // with no modifications, the device can have an alarm set to a time, and be ran from here
-    timeUnit wakeTargetOffset; // alarmIsSet is false by default
+    bool alarmIsSet; // no modifications; alarm is false
+    timeUnit wakeTargetOffset;
     virtual void runNow();
     alckAbstract();
     ~alckAbstract();
 
-protected:                                      // nothing is static, however; no more than one object should be made at a time.
-    const unsigned short displayClockPin   = 2; // these pins will not be constants in the future
-    const unsigned short displayDataIOPin  = 3;
-    const unsigned short button_A_setter   = 8;
-    const unsigned short button_B_hour     = 4;
-    const unsigned short button_C_minute   = 5;
-    const unsigned short buzzerPin         = 9;
-    const unsigned short defaultBrightness = 5;
+protected: // nothing is static, however; no more than one object should be made
+    unsigned short displayClockPin;
+    unsigned short displayDataIOPin;
+    unsigned short button_A_setter;
+    unsigned short button_B_hour;
+    unsigned short button_C_minute;
+    unsigned short buzzerPin;
+    unsigned short defaultBrightness;
     bool militaryTimeMode;
     float time_scale;
-    unsigned long millisWhenButtonLastPushed;
+    unsigned long msAtLastInteraction;
     unsigned int timeReadyToShow;
     TM1637Display *clockDisplay;
     timeUnit Offset;
     unsigned int outputTimeAsNumber(timeUnit);
     unsigned int qTime();
-    unsigned long timeSincelastButtonPush();
-    bool noButtonsAreBeingPushed();
-    void alarmingFunction();
     void timingFunction();
-    virtual void flashRapidWhileSetup();
+    void alarmingFunction();
     void buttonInputHandler();
+    unsigned long lastInteraction();
+    bool noInputsAreOn();
+    virtual void flashRapidWhileSetup();
 };
 class alckAdvanced : public alckAbstract {
 public:
@@ -63,13 +66,13 @@ public:
     ~alckAdvanced();
 
 protected:
-    const unsigned short humidAndTempSensorPin = 7; // not for long
-    bool debugMode;
+    unsigned short t_sensorPin;
     DHT *temperatureSensor;
-    void temperatureFunction();
+    void temperatureRoutine();
     void flashRapidWhileSetup(); // extends virtual
 private:
-    void brightnessHandlerRoutine();
+    bool debugMode;
     unsigned short maskClip(unsigned short);
+    void brightnessHandlerRoutine();
 };
 #endif
