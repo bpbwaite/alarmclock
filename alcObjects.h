@@ -10,27 +10,37 @@
 #include <pins_arduino.h>
 class timeUnit {
 public:
+    void setHour(unsigned int h_offset = 0);
+    void setMinute(unsigned int m_offset = 0);
+    unsigned int getHour();
+    unsigned int getMinute();
+    void upHour();
+    void downHour();
+    void upMinute();
+    void downMinute(); // can refactor
+
+protected:
     unsigned int hour;
     unsigned int minute;
 };
-class alckBase {
+class alckAbstract {
 public:
     bool alarmIsSet;           // with no modifications, the device can have an alarm set to a time, and be ran from here
-    timeUnit wakeTargetOffset; // alarmIsSet is false, by the base constructor
-    virtual void runNow();     // the more advanced versions of the clock implement the method differently
-    alckBase();
-    ~alckBase();
-protected:                                      // nothing static; but it is assumed only one object is made
-    const unsigned short displayClockPin   = 2; // these pins will not be constant in the future
+    timeUnit wakeTargetOffset; // alarmIsSet is false by default
+    virtual void runNow();
+    alckAbstract();
+    ~alckAbstract();
+
+protected:                                      // nothing is static, however; no more than one object should be made at a time.
+    const unsigned short displayClockPin   = 2; // these pins will not be constants in the future
     const unsigned short displayDataIOPin  = 3;
     const unsigned short button_A_setter   = 8;
     const unsigned short button_B_hour     = 4;
     const unsigned short button_C_minute   = 5;
     const unsigned short buzzerPin         = 9;
     const unsigned short defaultBrightness = 5;
-    unsigned short brightnessValue;
     bool militaryTimeMode;
-    float time_scale; // make setter
+    float time_scale;
     unsigned long millisWhenButtonLastPushed;
     unsigned int timeReadyToShow;
     TM1637Display *clockDisplay;
@@ -38,36 +48,28 @@ protected:                                      // nothing static; but it is ass
     unsigned int outputTimeAsNumber(timeUnit);
     unsigned int qTime();
     unsigned long timeSincelastButtonPush();
-    unsigned short ternaryBright(unsigned short);
     bool noButtonsAreBeingPushed();
     void alarmingFunction();
     void timingFunction();
     virtual void flashRapidWhileSetup();
     void buttonInputHandler();
 };
-class alckAdvanced : public alckBase {
+class alckAdvanced : public alckAbstract {
 public:
     void runNow(); // extends virtual
-    void t_btSetter(bool);
-    void t_tTempSetter(bool);
+    bool useTempRoutine;
+    bool dynamicBrightness;
     alckAdvanced();
     ~alckAdvanced();
-private:
-    const unsigned short lightSensorAnalogPin  = 18; // again, not constant in future
-    const unsigned short humidAndTempSensorPin = 7;
-    unsigned short darkHoursStart; // make a setter for 0-23
-    unsigned short darkHoursEnd;
-    bool usingTemperature = false;
-    bool obeyDimTime      = false; // old way of determining brightness
-    bool dynamicLighting  = false; // a future chassis design may use a sensor
-    bool immediateChange  = false; // the change is spread over a couple of minutes
-    bool debugMode        = false; // everything is set here so the constructors dont have to
-    bool time_btest       = false; // made a setter
-    bool magicBright      = false;
+
+protected:
+    const unsigned short humidAndTempSensorPin = 7; // not for long
+    bool debugMode;
     DHT *temperatureSensor;
     void temperatureFunction();
     void flashRapidWhileSetup(); // extends virtual
-    void lightSensorandBrightnessHandler();
-    unsigned short bright_computer();
+private:
+    void brightnessHandlerRoutine();
+    unsigned short maskClip(unsigned short);
 };
 #endif
