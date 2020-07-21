@@ -76,3 +76,8 @@ build_output/sketch/alcObjects.cpp.cpp.o
 build_output/sketch/alcObjects.h
 build_output/libraries/Adafruit_Sensor-master/Adafruit_Sensor.cpp.d
 build_output/libraries/Adafruit_Sensor-master/Adafruit_Sensor.cpp.o
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
+.vs/alarmClock/v16/.suo
+.vs/alarmClock/v16/Browse.VC.db
