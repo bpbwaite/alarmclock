@@ -1,6 +1,4 @@
 .clang-format
-avr-objdump.exe
-dump.bat
 .vscode/c_cpp_properties.json
 .vscode/tasks.json
 .vscode/settings.json
