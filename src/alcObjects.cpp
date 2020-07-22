@@ -8,10 +8,10 @@ timeUnit::timeUnit() {
     this->minute = 0x0;
 }
 timeUnit::~timeUnit() {}
-void timeUnit::setHour(unsigned int h_offset = 0) {
+void timeUnit::setHour(unsigned int h_offset) {
     this->hour = h_offset;
 }
-void timeUnit::setMinute(unsigned int m_offset = 0) {
+void timeUnit::setMinute(unsigned int m_offset) {
     this->minute = m_offset;
 }
 unsigned int timeUnit::getHour() {
@@ -20,17 +20,11 @@ unsigned int timeUnit::getHour() {
 unsigned int timeUnit::getMinute() {
     return this->minute;
 }
-void timeUnit::upHour() {
-    this->hour++;
+void timeUnit::upHour(int amount) {
+    this->hour += amount;
 }
-void timeUnit::downHour() {
-    this->hour--;
-}
-void timeUnit::upMinute() {
-    this->minute--;
-}
-void timeUnit::downMinute() {
-    this->minute--;
+void timeUnit::upMinute(int amount) {
+    this->minute += amount;
 }
 // ABSTRACT ALCK DEFINITIONS
 alckAbstract::alckAbstract() {
@@ -41,13 +35,12 @@ alckAbstract::alckAbstract() {
     button_C_minute   = 5;
     buzzerPin         = 9;
     defaultBrightness = 5;
-    time_scale        = 1.0F;
-    tinyDelay         = 3 / time_scale;
-    smallDelay        = 125 / time_scale;
-    mediumDelay       = 500 / time_scale;
-    largeDelay        = 1500 / time_scale;
-    ventiDelay        = 5000 / time_scale;
-    hugeDelay         = 24000 / time_scale;
+    tinyDelay         = 3;
+    smallDelay        = 125;
+    mediumDelay       = 500;
+    largeDelay        = 1500;
+    ventiDelay        = 5000;
+    hugeDelay         = 24000;
     clockDisplay      = new TM1637Display(displayClockPin, displayDataIOPin);
     pinMode(button_A_setter, INPUT_PULLUP);
     pinMode(button_B_hour, INPUT_PULLUP);
@@ -59,9 +52,9 @@ alckAbstract::alckAbstract() {
     militaryTimeMode = false;
     alarmIsSet       = false;
     Offset.setHour(12);
-    Offset.setMinute();
+    Offset.setMinute(0);
     wakeTargetOffset.setHour(12); // start up at noon
-    wakeTargetOffset.setMinute();
+    wakeTargetOffset.setMinute(0);
     msAtLastInteraction = 0;
 }
 alckAbstract::~alckAbstract() {}
@@ -73,7 +66,7 @@ unsigned long alckAbstract::lastInteraction() {
 }
 unsigned int alckAbstract::outputTimeAsNumber(timeUnit t_offset) {
     static unsigned int hourComponent, minuteComponent, minute_true;
-    unsigned long sec = time_scale * millis() / 1000;
+    unsigned long sec = millis() / 1000;
     minute_true       = (sec / 60 + Offset.getMinute());
     minuteComponent   = minute_true % 60;
     hourComponent     = (minute_true / 60 + Offset.getHour()) % 24;
@@ -98,7 +91,7 @@ void alckAbstract::timingFunction() {
     if (!alarmIsSet) {
         ColonController |= mask; // the colon flashes only when alarm is set.
     }
-    else if ((int)floor(time_scale) * millis() % 2000 > 1000 && !militaryTimeMode) { // the time scale* millis could be its own method by now
+    else if (millis() % 2000 > 1000 && !militaryTimeMode) {
         ColonController |= mask;
     }
     else {
@@ -107,7 +100,7 @@ void alckAbstract::timingFunction() {
     clockDisplay->showNumberDecEx(timeReadyToShow, ColonController, (timeReadyToShow < 99) || militaryTimeMode, 4, 0);
 }
 void alckAbstract::flashRapidWhileSetup() {
-    if ((int)floor(time_scale) * millis() % 1000 > 500) {
+    if (millis() % 1000 > 500) {
         clockDisplay->setBrightness(2);
     }
     else {
@@ -130,11 +123,11 @@ void alckAbstract::buttonInputHandler() { // needs work
             clockDisplay->showNumberDecEx(100 * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60, 64, true, 4, 0); // show the alarm clock setting
             militaryTimeMode = false;
             if (!digitalRead(button_B_hour)) {
-                wakeTargetOffset.upHour();
+                wakeTargetOffset.upHour(1);
                 delay(smallDelay);
             }
             if (!digitalRead(button_C_minute)) {
-                wakeTargetOffset.upMinute();
+                wakeTargetOffset.upMinute(1);
                 delay(smallDelay);
             }
         }
@@ -144,11 +137,11 @@ void alckAbstract::buttonInputHandler() { // needs work
             clockDisplay->showNumberDecEx(qTime(), 64, true, 4, 0); // show the time setting
             militaryTimeMode = false;
             if (!digitalRead(button_B_hour)) {
-                Offset.upHour();
+                Offset.upHour(1);
                 delay(smallDelay);
             }
             if (!digitalRead(button_C_minute)) {
-                Offset.upMinute();
+                Offset.upMinute(1);
                 delay(smallDelay);
             }
         }
@@ -162,8 +155,8 @@ void alckAbstract::alarmingFunction() {
     if (((lastInteraction() > ventiDelay) && sounding) || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60) && markedToRun)) {
         sounding = true;
         while (noInputsAreOn()) {
-            timingFunction();           // update time while beeping
-            if (millis() % 400 > 200) { // dont timescale this one
+            timingFunction(); // update time while beeping
+            if (millis() % 400 > 200) {
                 analogWrite(buzzerPin, 0xFF * loudnessScale);
                 delay(tinyDelay);
             }
@@ -202,7 +195,7 @@ alckAdvanced::alckAdvanced() {
 }
 alckAdvanced::~alckAdvanced() {}
 void alckAdvanced::flashRapidWhileSetup() {
-    if ((int)floor(time_scale) * millis() % 750 > 375) {
+    if (millis() % 750 > 375) {
         clockDisplay->setBrightness(1);
     }
     else {
@@ -210,7 +203,7 @@ void alckAdvanced::flashRapidWhileSetup() {
     }
 }
 void alckAdvanced::temperatureRoutine() {
-    const unsigned int intervalOfService = 5 * time_scale; // absolute interval: todo, public
+    const unsigned int intervalOfService = 5; //interval; todo: public
     static bool markedToRun              = true;
     static float temperature_F;
     static float temperature_C;
