@@ -198,7 +198,7 @@ void alckAdvanced::flashRapidWhileSetup() {
 }
 void alckAdvanced::temperatureRoutine() {
     const unsigned int intervalOfService = 5; //interval; todo: public
-    const unsigned int showForms         = 5000;
+    const unsigned int showForMs         = 5000;
     static bool markedToRun              = true;
     static float temperature_F;
     static float temperature_C;
@@ -222,7 +222,7 @@ void alckAdvanced::temperatureRoutine() {
                     clockDisplay->showNumberHexEx(0xF, 0, false, 1, 3);
                 }
             }
-            delay(5000);
+            delay(showForMs);
             markedToRun = false;
         }
         else if (qTime() % intervalOfService != 0) {
