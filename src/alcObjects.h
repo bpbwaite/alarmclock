@@ -42,12 +42,7 @@ protected: // nothing is static, however; no more than one object should be made
     bool militaryTimeMode;
     unsigned long msAtLastInteraction;
     unsigned int timeReadyToShow;
-    unsigned long tinyDelay;
-    unsigned long smallDelay;
-    unsigned long mediumDelay;
-    unsigned long largeDelay;
-    unsigned long ventiDelay;
-    unsigned long hugeDelay;
+    unsigned long debouncingDelay;
     TM1637Display *clockDisplay;
     timeUnit Offset;
     unsigned int outputTimeAsNumber(timeUnit);
