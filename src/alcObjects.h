@@ -10,14 +10,12 @@
 #include <pins_arduino.h>
 class timeUnit {
 public:
-    void setHour(unsigned int h_offset = 0);
-    void setMinute(unsigned int m_offset = 0);
+    void setHour(unsigned int);
+    void setMinute(unsigned int);
     unsigned int getHour();
     unsigned int getMinute();
-    void upHour();
-    void downHour();
-    void upMinute();
-    void downMinute(); // can refactor these^
+    void upHour(int);
+    void upMinute(int);
     timeUnit();
     ~timeUnit();
 
@@ -42,7 +40,6 @@ protected: // nothing is static, however; no more than one object should be made
     unsigned short buzzerPin;
     unsigned short defaultBrightness;
     bool militaryTimeMode;
-    float time_scale;
     unsigned long msAtLastInteraction;
     unsigned int timeReadyToShow;
     unsigned long tinyDelay;
