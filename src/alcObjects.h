@@ -12,7 +12,9 @@ class timeUnit {
 public:
     void setHour(unsigned int);
     void setMinute(unsigned int);
+    //! @return hour offset of this timeUnit
     unsigned int getHour();
+    //! @return minute offset of this timeUnit
     unsigned int getMinute();
     void upHour(int);
     void upMinute(int);
@@ -25,14 +27,15 @@ protected:
 };
 class alckAbstract {
 public:
-    bool alarmIsSet; // no modifications; alarm is false
+    //! constructor makes false by default
+    bool alarmIsSet;
     timeUnit wakeTargetOffset;
     virtual void runNow();
     alckAbstract();
     ~alckAbstract();
 
-protected: // nothing is static, however; no more than one object should be made
-    unsigned short displayClockPin;
+protected:
+    unsigned short displayClockPin; // todo: improve static
     unsigned short displayDataIOPin;
     unsigned short button_A_setter;
     unsigned short button_B_hour;
@@ -45,18 +48,23 @@ protected: // nothing is static, however; no more than one object should be made
     unsigned long debouncingDelay;
     TM1637Display *clockDisplay;
     timeUnit Offset;
+    //! @return amount of time since offset
     unsigned int outputTimeAsNumber(timeUnit);
+    //! @return four-digit time code
     unsigned int qTime();
     void timingFunction();
     void alarmingFunction();
     void buttonInputHandler();
+    //! @return milliseconds since last known button press
     unsigned long lastInteraction();
+    //! @return if an interaction is taking place
     bool noInputsAreOn();
     virtual void flashRapidWhileSetup();
 };
 class alckAdvanced : public alckAbstract {
 public:
-    void runNow(); // extends virtual
+    //! extends alck virtual
+    void runNow();
     bool useTempRoutine;
     bool dynamicBrightness;
     alckAdvanced();
@@ -66,9 +74,12 @@ protected:
     unsigned short t_sensorPin;
     DHT *temperatureSensor;
     void temperatureRoutine();
-    void flashRapidWhileSetup(); // extends virtual
+    //! extends alck virtual
+    void flashRapidWhileSetup();
+
 private:
     bool debugMode;
+    //! @return a number 0x0 to 0x7
     unsigned short maskClip(unsigned short);
     void brightnessHandlerRoutine();
 };
