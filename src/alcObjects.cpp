@@ -35,12 +35,7 @@ alckAbstract::alckAbstract() {
     button_C_minute   = 5;
     buzzerPin         = 9;
     defaultBrightness = 5;
-    tinyDelay         = 3;
-    smallDelay        = 125;
-    mediumDelay       = 500;
-    largeDelay        = 1500;
-    ventiDelay        = 5000;
-    hugeDelay         = 24000;
+    debouncingDelay   = 125;
     clockDisplay      = new TM1637Display(displayClockPin, displayDataIOPin);
     pinMode(button_A_setter, INPUT_PULLUP);
     pinMode(button_B_hour, INPUT_PULLUP);
@@ -108,15 +103,17 @@ void alckAbstract::flashRapidWhileSetup() {
     }
 }
 void alckAbstract::buttonInputHandler() { // needs work
+    const unsigned int modeSwapDelay    = 1500;
+    static unsigned int preventionDelay = 5 * debouncingDelay;
     if (!digitalRead(button_A_setter) || !digitalRead(button_B_hour) || !digitalRead(button_C_minute)) {
         msAtLastInteraction = millis();
     }
     if (!digitalRead(button_B_hour) && !digitalRead(button_C_minute)) { // press both hour and minute to toggle
         alarmIsSet = !alarmIsSet;                                       // for toggling alarm
-        delay(mediumDelay);
+        delay(preventionDelay);
     }
     if (!digitalRead(button_A_setter)) { // for setting alarm
-        delay(largeDelay);
+        delay(modeSwapDelay);
         while (!digitalRead(button_A_setter)) {
             flashRapidWhileSetup();
             militaryTimeMode = true;
@@ -124,11 +121,11 @@ void alckAbstract::buttonInputHandler() { // needs work
             militaryTimeMode = false;
             if (!digitalRead(button_B_hour)) {
                 wakeTargetOffset.upHour(1);
-                delay(smallDelay);
+                delay(debouncingDelay);
             }
             if (!digitalRead(button_C_minute)) {
                 wakeTargetOffset.upMinute(1);
-                delay(smallDelay);
+                delay(debouncingDelay);
             }
         }
         while (digitalRead(button_A_setter)) { // for setting time
@@ -138,38 +135,36 @@ void alckAbstract::buttonInputHandler() { // needs work
             militaryTimeMode = false;
             if (!digitalRead(button_B_hour)) {
                 Offset.upHour(1);
-                delay(smallDelay);
+                delay(debouncingDelay);
             }
             if (!digitalRead(button_C_minute)) {
                 Offset.upMinute(1);
-                delay(smallDelay);
+                delay(debouncingDelay);
             }
-        }
-        delay(mediumDelay);
+        } // could use another protected method
+        delay(preventionDelay);
     }
 }
 void alckAbstract::alarmingFunction() {
     const float loudnessScale = 0.95;
     static bool markedToRun   = true;
     static bool sounding      = false;
-    if (((lastInteraction() > ventiDelay) && sounding) || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60) && markedToRun)) {
+    if (((lastInteraction() > (2 * debouncingDelay)) && sounding) || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60) && markedToRun)) {
         sounding = true;
         while (noInputsAreOn()) {
             timingFunction(); // update time while beeping
             if (millis() % 400 > 200) {
                 analogWrite(buzzerPin, 0xFF * loudnessScale);
-                delay(tinyDelay);
             }
             else {
                 digitalWrite(buzzerPin, LOW);
-                delay(tinyDelay);
             }
         }
         while (!noInputsAreOn()) { // means a button is being pushed
             sounding    = false;
             markedToRun = false;
             digitalWrite(buzzerPin, LOW); // halt buzzer
-            delay(largeDelay);            // hopefully not change anything by accident
+            delay(debouncingDelay);
         }
     }
     else if (!markedToRun && qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
@@ -181,7 +176,6 @@ void alckAbstract::runNow() {
         timingFunction();
         alarmingFunction();
         buttonInputHandler();
-        delay(tinyDelay); // limiter
     } while (true);
 }
 // ADVANCED ALCK DEFINITIONS
@@ -204,14 +198,15 @@ void alckAdvanced::flashRapidWhileSetup() {
 }
 void alckAdvanced::temperatureRoutine() {
     const unsigned int intervalOfService = 5; //interval; todo: public
+    const unsigned int showForms         = 5000;
     static bool markedToRun              = true;
     static float temperature_F;
     static float temperature_C;
     if (!useTempRoutine) {
         // skip
     }
-    else {                                                                                                                                         // deprecated
-        if (lastInteraction() > hugeDelay && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // note: button_C_minute: prevents showing temp while passing the trigger when setting time
+    else {                                                                                                                                                          // deprecated
+        if (lastInteraction() > (intervalOfService * 1800) && qTime() != 1200 && qTime() % intervalOfService == 0 && markedToRun && digitalRead(button_C_minute)) { // note: button_C_minute: prevents showing temp while passing the trigger when setting time
             clockDisplay->clear();
             if (militaryTimeMode) {                                        // legacy switch for taking reading:
                 temperature_C = temperatureSensor->readTemperature(false); // false means celsius
@@ -227,7 +222,7 @@ void alckAdvanced::temperatureRoutine() {
                     clockDisplay->showNumberHexEx(0xF, 0, false, 1, 3);
                 }
             }
-            delay(ventiDelay);
+            delay(5000);
             markedToRun = false;
         }
         else if (qTime() % intervalOfService != 0) {
@@ -251,6 +246,5 @@ void alckAdvanced::runNow() {
         temperatureRoutine();
         if (debugMode) {
         }
-        delay(tinyDelay);
     } while (true);
 }
