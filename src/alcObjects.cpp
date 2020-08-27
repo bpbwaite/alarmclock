@@ -9,10 +9,10 @@ timeUnit::timeUnit() {
 }
 timeUnit::~timeUnit() {}
 void timeUnit::setHour(unsigned int h_offset) {
-    this->hour = h_offset;
+    this->hour = h_offset % 24;
 }
 void timeUnit::setMinute(unsigned int m_offset) {
-    this->minute = m_offset;
+    this->minute = m_offset % 60;
 }
 unsigned int timeUnit::getHour() {
     return this->hour;
@@ -160,15 +160,15 @@ void alckAbstract::alarmingFunction() {
                 digitalWrite(buzzerPin, LOW);
             }
         }
-        while (!noInputsAreOn()) { // means a button is being pushed
-            sounding    = false;
-            markedToRun = false;
-            digitalWrite(buzzerPin, LOW); // halt buzzer
-            delay(debouncingDelay);
-        }
     }
     else if (!markedToRun && qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
         markedToRun = true;
+    }
+    while (!noInputsAreOn()) { // means a button is being pushed
+        sounding    = false;
+        markedToRun = false;
+        digitalWrite(buzzerPin, LOW); // halt buzzer
+        delay(debouncingDelay);
     }
 }
 void alckAbstract::runNow() {
