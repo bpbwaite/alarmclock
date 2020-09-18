@@ -146,12 +146,12 @@ void alckAbstract::buttonInputHandler() { // needs work
     }
 }
 void alckAbstract::alarmingFunction() {
-    const float loudnessScale = 0.95;
-    static bool markedToRun   = true;
-    static bool sounding      = false;
+    const float loudnessScale        = 0.95;
+    static volatile bool markedToRun = true;
+    static volatile bool sounding    = false;
     if (((lastInteraction() > (2 * debouncingDelay)) && sounding) || (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60) && markedToRun)) {
         sounding = true;
-        while (noInputsAreOn()) {
+        do {
             timingFunction(); // update time while beeping
             if (millis() % 400 > 200) {
                 analogWrite(buzzerPin, 0xFF * loudnessScale);
@@ -159,16 +159,17 @@ void alckAbstract::alarmingFunction() {
             else {
                 digitalWrite(buzzerPin, LOW);
             }
-        }
-        while (!noInputsAreOn()) { // means a button is being pushed
-            sounding    = false;
-            markedToRun = false;
-            digitalWrite(buzzerPin, LOW); // halt buzzer
-            delay(debouncingDelay);
-        }
+        } while (noInputsAreOn());
     }
     else if (!markedToRun && qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
         markedToRun = true;
+    }
+    // buggy area
+    while (!noInputsAreOn()) { // means a button is being pushed
+        sounding    = false;
+        markedToRun = false;
+        digitalWrite(buzzerPin, LOW); // halt buzzer
+        delay(debouncingDelay);
     }
 }
 void alckAbstract::runNow() {
