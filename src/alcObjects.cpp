@@ -153,23 +153,23 @@ void alckAbstract::alarmingFunction() {
         sounding = true;
         do {
             timingFunction(); // update time while beeping
-            if (millis() % 400 > 200) {
+            if (sounding && millis() % 400 > 200) {
                 analogWrite(buzzerPin, 0xFF * loudnessScale);
             }
             else {
                 digitalWrite(buzzerPin, LOW);
             }
         } while (noInputsAreOn());
+        // buggy area
+        while (!noInputsAreOn()) { // means a button is being pushed
+            sounding    = false;
+            markedToRun = false;
+            digitalWrite(buzzerPin, LOW); // halt buzzer
+            delay(debouncingDelay);
+        }
     }
     else if (!markedToRun && qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
         markedToRun = true;
-    }
-    // buggy area
-    while (!noInputsAreOn()) { // means a button is being pushed
-        sounding    = false;
-        markedToRun = false;
-        digitalWrite(buzzerPin, LOW); // halt buzzer
-        delay(debouncingDelay);
     }
 }
 void alckAbstract::runNow() {
