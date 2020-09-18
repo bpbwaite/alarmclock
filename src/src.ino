@@ -1,6 +1,7 @@
 /*
     by Bradyn Braithwaite, 2020
 */
+#include "Arduino.h"
 #include "alcObjects.h"
 alckAdvanced nanoAlck;
 void setup() {
