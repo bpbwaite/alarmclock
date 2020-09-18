@@ -3,10 +3,12 @@
 */
 #ifndef ALCOBJECTS_H
 #define ALCOBJECTS_H
+#include "Arduino.h"
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
 #include <TM1637Display.h>
+#include <math.h>
 #include <pins_arduino.h>
 class timeUnit {
 public:
