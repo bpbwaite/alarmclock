@@ -105,6 +105,9 @@ void alckAbstract::flashRapidWhileSetup() {
 void alckAbstract::buttonInputHandler() { // needs work
     const unsigned int modeSwapDelay    = 1500;
     static unsigned int preventionDelay = 5 * debouncingDelay;
+    while (!noInputsAreOn()) {        // means a button is being pushed
+        digitalWrite(buzzerPin, LOW); // don't allow alarm to go when a button is pushed
+    }
     if (!digitalRead(button_A_setter) || !digitalRead(button_B_hour) || !digitalRead(button_C_minute)) {
         msAtLastInteraction = millis();
     }
@@ -159,26 +162,15 @@ void alckAbstract::alarmingFunction() {
             else {
                 digitalWrite(buzzerPin, LOW);
             }
-<<<<<<< HEAD
-=======
         } while (noInputsAreOn());
-        // buggy area
-        while (!noInputsAreOn()) { // means a button is being pushed
-            sounding    = false;
-            markedToRun = false;
-            digitalWrite(buzzerPin, LOW); // halt buzzer
-            delay(debouncingDelay);
->>>>>>> 5cebc21e96973216dec5a60836335bf33d89b424
-        }
+        // exiting allows any button press to halt the buzzer
+        sounding    = false;
+        markedToRun = false;
+        alarmIsSet  = false;
+        // Force off
     }
     else if (!markedToRun && qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
         markedToRun = true;
-    }
-    while (!noInputsAreOn()) { // means a button is being pushed
-        sounding    = false;
-        markedToRun = false;
-        digitalWrite(buzzerPin, LOW); // halt buzzer
-        delay(debouncingDelay);
     }
 }
 void alckAbstract::runNow() {
