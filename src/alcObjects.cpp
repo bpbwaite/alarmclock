@@ -105,7 +105,7 @@ void alckAbstract::flashRapidWhileSetup() {
 void alckAbstract::buttonInputHandler() { // needs work
     const unsigned int modeSwapDelay    = 1500;
     static unsigned int preventionDelay = 5 * debouncingDelay;
-    while (!noInputsAreOn()) {        // means a button is being pushed
+    if (!noInputsAreOn()) {           // means a button is being pushed
         digitalWrite(buzzerPin, LOW); // don't allow alarm to go when a button is pushed
     }
     if (!digitalRead(button_A_setter) || !digitalRead(button_B_hour) || !digitalRead(button_C_minute)) {
