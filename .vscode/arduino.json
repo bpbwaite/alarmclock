@@ -4,5 +4,4 @@
     "output": ".\\build_output",
     "configuration": "cpu=atmega328old",
     "programmer": "AVRISP mkII",
-    "port": "COM12"
 }
