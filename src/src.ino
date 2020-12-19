@@ -6,9 +6,9 @@
 alckAdvanced nanoAlck;
 void setup() {
     nanoAlck.dynamicBrightness = true;
-    nanoAlck.useTempRoutine    = true;
+    nanoAlck.useTempRoutine    = false;
     nanoAlck.wakeTargetOffset.setHour(8);
-    nanoAlck.wakeTargetOffset.setMinute(0);
+    nanoAlck.wakeTargetOffset.setMinute(5);
 }
 void loop() {
     nanoAlck.runNow();

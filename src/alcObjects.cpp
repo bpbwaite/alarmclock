@@ -30,9 +30,9 @@ void timeUnit::upMinute(int amount) {
 alckAbstract::alckAbstract() {
     displayClockPin   = 2;
     displayDataIOPin  = 3;
-    button_A_setter   = 8;
+    button_A_setter   = 5;
     button_B_hour     = 4;
-    button_C_minute   = 5;
+    button_C_minute   = 8;
     buzzerPin         = 9;
     defaultBrightness = 5;
     debouncingDelay   = 125;
