@@ -1,15 +1,13 @@
-/*
-    by Bradyn Braithwaite, 2020
-*/
-#include "Arduino.h"
-#include "alcObjects.h"
-alckAdvanced nanoAlck;
+#include "alckObjects.h"
+#include "alckutils.h"
+alck arduinoAlck;
 void setup() {
-    nanoAlck.dynamicBrightness = true;
-    nanoAlck.useTempRoutine    = false;
-    nanoAlck.wakeTargetOffset.setHour(8);
-    nanoAlck.wakeTargetOffset.setMinute(5);
+    //stringToAlarmTime(&arduinoAlck, "8:00 AM");
+    arduinoAlck.wakeTargetOffset.setHour(8);
+    arduinoAlck.wakeTargetOffset.setMinute(0);
+    arduinoAlck.alarmIsSet        = false;
+    arduinoAlck.brightnessRoutine = true;
 }
 void loop() {
-    nanoAlck.runNow();
+    arduinoAlck.execute();
 }
