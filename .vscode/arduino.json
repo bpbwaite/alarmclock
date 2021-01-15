@@ -1,7 +1,8 @@
 {
     "sketch": "src\\src.ino",
-    "board": "arduino:avr:nano",
+    "board": "attiny:avr:ATtinyX5",
     "output": ".\\build_output",
-    "configuration": "cpu=atmega328old",
-    "programmer": "AVRISP mkII",
+    "configuration": "cpu=attiny85,clock=internal1",
+    "programmer": "Arduino as ISP",
+    "port": "COM8"
 }
