@@ -78,3 +78,14 @@ build_output/libraries/Adafruit_Sensor-master/Adafruit_Sensor.cpp.o
 .vs/VSWorkspaceState.json
 .vs/alarmClock/v16/.suo
 .vs/alarmClock/v16/Browse.VC.db
+build_output/sketch/alckObjects.cpp
+build_output/sketch/alckObjects.cpp.d
+build_output/sketch/alckObjects.cpp.o
+build_output/sketch/alckObjects.h
+build_output/sketch/alckutils.cpp
+build_output/sketch/alckutils.cpp.d
+build_output/sketch/alckutils.cpp.o
+build_output/sketch/alckutils.h
+build_output/sketch/src.ino.cpp
+build_output/sketch/src.ino.cpp.d
+build_output/sketch/src.ino.cpp.o
