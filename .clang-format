@@ -1,7 +1,7 @@
 Standard: Auto
 BasedOnStyle: LLVM
 IndentWidth: 4
-ColumnLimit: 0
+ColumnLimit: 120
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: true
@@ -25,9 +25,10 @@ BraceWrapping:
   BeforeElse: true
   SplitEmptyRecord: false
   SplitEmptyNamespace: true
+SortIncludes: false
 IndentWrappedFunctionNames: true
 MaxEmptyLinesToKeep: 1
-SpaceAfterCStyleCast: false
+SpaceAfterCStyleCast: true
 SpaceAfterLogicalNot: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCpp11BracedList: true
@@ -36,3 +37,4 @@ SpaceBeforeRangeBasedForLoopColon: true
 SpacesInContainerLiterals: false
 AllowShortFunctionsOnASingleLine: Inline
 BinPackParameters: false
+BinPackArguments: false

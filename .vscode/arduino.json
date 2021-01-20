@@ -1,8 +1,8 @@
 {
     "sketch": "src\\src.ino",
-    "board": "attiny:avr:ATtinyX5",
+    "board": "Seeeduino:samd:seeed_XIAO_m0",
     "output": ".\\build_output",
-    "configuration": "cpu=attiny85,clock=internal1",
-    "programmer": "Arduino as ISP",
+    "configuration": "usbstack=arduino,debug=off",
+    "programmer": "AVRISP mkII",
     "port": "COM8"
 }

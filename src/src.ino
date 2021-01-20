@@ -1,6 +1,6 @@
 #include "alckObjects.h"
 
-#define ATTINY 1
+#define SEEDUINO
 // board type used to determine pin mappings
 // Order: displayClockPin displayDataIOPin button_A_setter button_B_hour
 // button_C_minute buzzerPin
