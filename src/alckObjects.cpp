@@ -48,19 +48,13 @@ alck::alck(uint8_t *pinMap) {
     debouncingDelay     = 125;
     m_mode              = false;
     alarmIsSet          = false;
-    alarmMarkedToRun    = true;
-    alarmSounding       = false;
-    brightnessRoutine   = false;
-    debugMode           = false;
 
     Offset.setHour(12); // initialize time to noon
     Offset.setMinute(0);
     wakeTargetOffset.setHour(12); // initialize to noon alarm
     wakeTargetOffset.setMinute(0);
 }
-bool alck::noInputsAreOn() {
-    return !(!digitalRead(button_B_hour) && !digitalRead(button_C_minute) && !digitalRead(button_A_setter));
-}
+
 unsigned long alck::lastInteraction() {
     return millis() - msAtLastInteraction;
 }
@@ -75,7 +69,15 @@ unsigned int alck::outputTimeAsNumber(timeUnit t_offset) {
 unsigned int alck::qTime() {
     return outputTimeAsNumber(Offset);
 }
-void alck::timingFunction() {
+inline byte alck::maskClip(int inputC) {
+    return inputC < 0 ? 0x0 : (inputC > 7 ? 0x7 : (inputC));
+}
+inline void alck::brightnessHandlerRoutine() {
+    double t_dec = (qTime() / 100.0);
+    clockDisplay->setBrightness(maskClip(
+        ceil(0.0003 * pow(t_dec, 4) - 0.0182 * pow(t_dec, 3) + 0.316 * pow(t_dec, 2) - 1.212 * t_dec + 0.972)));
+}
+inline void alck::timingFunction() {
     const byte mask = 64; // colon mask. some chips require 64
     timeReadyToShow = qTime();
     if (!m_mode) {
@@ -92,6 +94,7 @@ void alck::timingFunction() {
                                   (timeReadyToShow < 99U) || m_mode,
                                   0x4,
                                   0x0);
+    brightnessHandlerRoutine();
 }
 void alck::flashRapidWhileSetup() {
     if (millis() % 750 > 375) {
@@ -101,7 +104,7 @@ void alck::flashRapidWhileSetup() {
         clockDisplay->setBrightness(0x7);
     }
 }
-void alck::buttonInputHandler() { // needs work
+inline void alck::buttonInputHandler() { // needs work
     const unsigned int modeSwapDelay    = 500;
     static unsigned int preventionDelay = 5 * debouncingDelay;
 
@@ -150,45 +153,22 @@ void alck::buttonInputHandler() { // needs work
         delay(preventionDelay);
     }
 }
-void alck::alarmingFunction() { // needs work
-    // const double loudnessScale = 0.95;
-    // if (!noInputsAreOn()) {           // means a button is being pushed
-    //    digitalWrite(buzzerPin, LOW); // don't allow alarm to go when a button is pushed
-    //}
-    if (((lastInteraction() > (2 * debouncingDelay)) && alarmSounding) ||
-        (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60) &&
-         alarmMarkedToRun)) {
-        alarmSounding = true;
-        do {
-            timingFunction(); // update time while beeping
-            if ((millis() % 2000) > 800) {
-                digitalWrite(buzzerPin, HIGH); // previously 0xFF*loudnessScale
-            }
-            else {
-                digitalWrite(buzzerPin, LOW);
-            }
-        } while (alarmSounding && noInputsAreOn());
+inline void alck::alarmingFunction() {
+    static bool alarmMarkedToRun = true;
+    if (alarmIsSet && alarmMarkedToRun &&
+        (qTime() == 100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
+        while (digitalRead(button_A_setter) && digitalRead(button_B_hour) && digitalRead(button_C_minute)) {
+            timingFunction(); // to update time while beeping
+            digitalWrite(buzzerPin, millis() % 1000 > 500 ? HIGH : LOW);
+        }
         // exiting allows any button press to halt the buzzer
-        alarmSounding    = false;
         alarmMarkedToRun = false;
-        // Force alarm off. code is blocking and bad. rethink it
     }
     alarmMarkedToRun = qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute());
 }
-byte alck::maskClip(int inputC) {
-    return inputC < 0 ? 0x0 : (inputC > 7 ? 0x7 : (inputC));
-}
-void alck::brightnessHandlerRoutine() {
-    double t_dec = (qTime() / 100.0);
-    clockDisplay->setBrightness(maskClip(
-        ceil(0.0003 * pow(t_dec, 4) - 0.0182 * pow(t_dec, 3) + 0.316 * pow(t_dec, 2) - 1.212 * t_dec + 0.972)));
-}
+
 void alck::execute() {
     timingFunction();
     alarmingFunction();
     buttonInputHandler();
-    brightnessHandlerRoutine();
-    if (debugMode) {
-        // nothing here yet
-    }
 }

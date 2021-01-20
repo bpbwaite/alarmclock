@@ -26,8 +26,6 @@ class alck {
 public:
     alck(uint8_t *);
     bool alarmIsSet; // false by default
-    bool brightnessRoutine;
-
     timeUnit wakeTargetOffset;
     void execute();
 
@@ -45,9 +43,6 @@ protected:
     unsigned long debouncingDelay;
     int timeReadyToShow;
     bool m_mode;
-    bool debugMode;
-    bool alarmMarkedToRun;
-    bool alarmSounding;
     TM1637Display *clockDisplay;
     timeUnit Offset;
 
@@ -55,14 +50,13 @@ protected:
     unsigned int outputTimeAsNumber(timeUnit);
     //! @return four-digit time code
     unsigned int qTime();
-    byte maskClip(int);
-    void timingFunction();
-    void alarmingFunction();
-    void buttonInputHandler();
+    inline byte maskClip(int);
+    inline void timingFunction();
+    inline void alarmingFunction();
+    inline void buttonInputHandler();
     //! @return milliseconds since last known button press
     unsigned long lastInteraction();
     //! @return if an interaction is taking place
-    bool noInputsAreOn();
     void flashRapidWhileSetup();
-    void brightnessHandlerRoutine();
+    inline void brightnessHandlerRoutine();
 };

@@ -1,5 +1,5 @@
 {
-    "sketch": "src\\src.ino",
+    "sketch": "src/src.ino",
     "board": "Seeeduino:samd:seeed_XIAO_m0",
     "output": ".\\build_output",
     "configuration": "usbstack=arduino,debug=off",
