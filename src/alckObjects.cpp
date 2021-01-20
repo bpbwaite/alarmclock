@@ -59,7 +59,7 @@ alck::alck(uint8_t *pinMap) {
     wakeTargetOffset.setMinute(0);
 }
 bool alck::noInputsAreOn() {
-    return !digitalRead(button_B_hour) && !digitalRead(button_C_minute) && !digitalRead(button_A_setter);
+    return !(!digitalRead(button_B_hour) && !digitalRead(button_C_minute) && !digitalRead(button_A_setter));
 }
 unsigned long alck::lastInteraction() {
     return millis() - msAtLastInteraction;
