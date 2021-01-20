@@ -46,7 +46,8 @@ protected:
     int timeReadyToShow;
     bool m_mode;
     bool debugMode;
-
+    bool alarmMarkedToRun;
+    bool alarmSounding;
     TM1637Display *clockDisplay;
     timeUnit Offset;
 

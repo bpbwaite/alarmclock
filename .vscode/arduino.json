@@ -4,5 +4,5 @@
     "output": ".\\build_output",
     "configuration": "usbstack=arduino,debug=off",
     "programmer": "AVRISP mkII",
-    "port": "COM8"
+    "port": "COM18"
 }

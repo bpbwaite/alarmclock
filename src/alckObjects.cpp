@@ -48,6 +48,8 @@ alck::alck(uint8_t *pinMap) {
     debouncingDelay     = 125;
     m_mode              = false;
     alarmIsSet          = false;
+    alarmMarkedToRun    = true;
+    alarmSounding       = false;
     brightnessRoutine   = false;
     debugMode           = false;
 
@@ -57,7 +59,7 @@ alck::alck(uint8_t *pinMap) {
     wakeTargetOffset.setMinute(0);
 }
 bool alck::noInputsAreOn() {
-    return digitalRead(button_B_hour) && digitalRead(button_C_minute) && digitalRead(button_A_setter);
+    return !digitalRead(button_B_hour) && !digitalRead(button_C_minute) && !digitalRead(button_A_setter);
 }
 unsigned long alck::lastInteraction() {
     return millis() - msAtLastInteraction;
@@ -102,10 +104,7 @@ void alck::flashRapidWhileSetup() {
 void alck::buttonInputHandler() { // needs work
     const unsigned int modeSwapDelay    = 500;
     static unsigned int preventionDelay = 5 * debouncingDelay;
-    if (!noInputsAreOn()) { // means a button is being pushed
-        digitalWrite(buzzerPin,
-                     LOW); // don't allow alarm to go when a button is pushed
-    }
+
     if (!digitalRead(button_A_setter) || !digitalRead(button_B_hour) || !digitalRead(button_C_minute)) {
         msAtLastInteraction = millis();
     }
@@ -152,31 +151,29 @@ void alck::buttonInputHandler() { // needs work
     }
 }
 void alck::alarmingFunction() { // needs work
-    const double loudnessScale = 0.95;
-    static bool markedToRun    = true;
-    static bool sounding       = false;
-    if (((lastInteraction() > (2 * debouncingDelay)) && sounding) ||
+    // const double loudnessScale = 0.95;
+    // if (!noInputsAreOn()) {           // means a button is being pushed
+    //    digitalWrite(buzzerPin, LOW); // don't allow alarm to go when a button is pushed
+    //}
+    if (((lastInteraction() > (2 * debouncingDelay)) && alarmSounding) ||
         (alarmIsSet && (qTime() == 100U * (wakeTargetOffset.getHour() % 24) + wakeTargetOffset.getMinute() % 60) &&
-         markedToRun)) {
-        sounding = true;
+         alarmMarkedToRun)) {
+        alarmSounding = true;
         do {
             timingFunction(); // update time while beeping
-            if (millis() % 1000 > 500) {
-                analogWrite(buzzerPin, 0xFF * loudnessScale);
+            if ((millis() % 2000) > 800) {
+                digitalWrite(buzzerPin, HIGH); // previously 0xFF*loudnessScale
             }
             else {
                 digitalWrite(buzzerPin, LOW);
             }
-        } while (sounding && noInputsAreOn());
+        } while (alarmSounding && noInputsAreOn());
         // exiting allows any button press to halt the buzzer
-        sounding    = false;
-        markedToRun = false;
-        alarmIsSet  = false;
+        alarmSounding    = false;
+        alarmMarkedToRun = false;
         // Force alarm off. code is blocking and bad. rethink it
     }
-    else if (qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute())) {
-        markedToRun = true;
-    }
+    alarmMarkedToRun = qTime() != (100U * wakeTargetOffset.getHour() + wakeTargetOffset.getMinute());
 }
 byte alck::maskClip(int inputC) {
     return inputC < 0 ? 0x0 : (inputC > 7 ? 0x7 : (inputC));
