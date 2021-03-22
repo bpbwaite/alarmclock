@@ -59,7 +59,7 @@ unsigned long alck::lastInteraction() {
     return millis() - msAtLastInteraction;
 }
 unsigned int alck::outputTimeAsNumber(timeUnit t_offset) {
-    const double timescalar = 0.99992;
+    const double timescalar = 0.999672;
     static long hourComponent, minuteComponent, minute_true;
     unsigned long sec = millis() / 1000 * timescalar;
     minute_true       = (sec / 60 + Offset.getMinute());
