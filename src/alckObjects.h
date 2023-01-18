@@ -1,5 +1,5 @@
 /*
-    by Bradyn Braithwaite, 2020
+    by B. Braithwaite, 2020
 */
 #pragma once
 
